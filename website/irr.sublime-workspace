@@ -1,0 +1,457 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"participant",
+				"participant_id"
+			],
+			[
+				"partici",
+				"participant_id"
+			],
+			[
+				"yAxis",
+				"yAxisWidth"
+			],
+			[
+				"get",
+				"getDescriptiveStats"
+			],
+			[
+				"twee",
+				"tweets_to_insert"
+			],
+			[
+				"tweet",
+				"tweet_start_found"
+			],
+			[
+				"ALL",
+				"ALL_WITH_RELATIONS"
+			],
+			[
+				"mincredits",
+				"mincredits"
+			],
+			[
+				"lastyear",
+				"lastyear"
+			],
+			[
+				"firstquarter",
+				"firstquarter"
+			],
+			[
+				"DaysOfWee",
+				"DaysOfWeekToBeArranged"
+			],
+			[
+				"abb",
+				"abbreviations"
+			],
+			[
+				"curr",
+				"curriculums"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "Packages/Python/Python.sublime-build",
+	"command_palette":
+	{
+		"height": 287.0,
+		"selected_items":
+		[
+		],
+		"width": 467.0
+	},
+	"console":
+	{
+		"height": 0.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/soco/Sites/cal/index.html",
+		"/Users/soco/Sites/cars/index.html",
+		"/Users/soco/Sites/cars/data/cars.csv",
+		"/Users/soco/dev/projects/tweet/parse.py",
+		"/Users/soco/Documents/Dropbox/ETC Dev/Visualizations/TwitterVisualization/Tools/python_dbstub/dbstub.py",
+		"/Users/soco/dev/projects/HCDE411/calc_agreement.py",
+		"/Users/soco/dev/projects/tweet/testdata.txt",
+		"/Users/soco/dev/projects/HCDE411/test.csv",
+		"/Users/soco/Desktop/viz meeting with cecilia, katie, and michael - 1-25-2013.txt",
+		"/Users/soco/Sites/cars/js/d3.v3.js",
+		"/Users/soco/Library/Application Support/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/Users/soco/Library/Application Support/Sublime Text 2/Packages/User/Preferences.sublime-settings",
+		"/Users/soco/Library/Application Support/Sublime Text 2/Packages/User/HTML.sublime-settings",
+		"/Users/soco/dev/projects/tweet/utf8test.txt",
+		"/Users/soco/dev/projects/tweet/nfl.txt",
+		"/Users/soco/dev/projects/HCDE310/data_import/section_grabber.py",
+		"/Users/soco/dev/projects/HCDE310/data_import/student.py",
+		"/Users/soco/Documents/Dropbox/HCDE411/Project2/Weather Data/clean_data.py",
+		"/Users/soco/Documents/Dropbox/HCDE411/Project2/Weather Data/cleaned.csv",
+		"/Users/soco/Documents/Dropbox/HCDE411/Project2/Weather Data/sd5.csv",
+		"/Users/soco/Sites/cal/data/cal.csv",
+		"/Users/soco/Downloads/WeatherData/SurfaceData-Hourly-Global-2/SurfaceData-Hourly-Global-Data-2.csv",
+		"/Users/soco/Downloads/WeatherData/SurfaceData-Hourly-Global-3/SurfaceData-Hourly-Global-Data-3.csv",
+		"/Users/soco/Sites/forecasternames/index.html",
+		"/Users/soco/Sites/forecasternames/hist.html",
+		"/Users/soco/Sites/cal/cal.csv",
+		"/Users/soco/Sites/forecasternames/data/forecast_names.csv",
+		"/Users/soco/Downloads/Navid Mashayekhi CV.docx",
+		"/Users/soco/test.csv",
+		"/Users/soco/dev/projects/HCDE310/main/views.py",
+		"/Users/soco/dev/projects/HCDE310/main/templates/template.html",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/import_courses.py",
+		"/Users/soco/dev/projects/HCDE310/main/templates/section.html",
+		"/Users/soco/dev/projects/HCDE310/static/js/app.js",
+		"/Users/soco/dev/projects/HCDE310/static/css/default.css",
+		"/Users/soco/dev/projects/HCDE310/main/templates/index.html",
+		"/Users/soco/dev/projects/HCDE310/main/models.py",
+		"/Users/soco/dev/projects/HCDE310/main/api.py",
+		"/Users/soco/dev/projects/HCDE310/HCDE310/urls.py",
+		"/Users/soco/dev/projects/HCDE310/main/templates/course.html",
+		"/Users/soco/dev/projects/HCDE310/main/templatetags/filters.py",
+		"/Users/soco/dev/projects/HCDE310/main/templates/objlist.html",
+		"/Users/soco/dev/projects/HCDE310/HCDE310/settings.py",
+		"/Users/soco/dev/projects/HCDE310/main/templates/sqldebug.html",
+		"/Users/soco/dev/projects/HCDE310/main/templates/about.html",
+		"/Users/soco/dev/projects/HCDE310/bootstrap/less/variables.less",
+		"/Users/soco/dev/projects/HCDE310/bootstrap/Makefile",
+		"/Users/soco/dev/projects/HCDE310/main/context_processors.py",
+		"/Users/soco/dev/projects/HCDE310/main/templatetags/__init__.py",
+		"/Users/soco/dev/projects/HCDE310/main/filters.py",
+		"/Users/soco/dev/projects/HCDE310/main/templates/department.html",
+		"/Users/soco/dev/projects/HCDE310/static/css/bootstrap.css",
+		"/Users/soco/dev/projects/HCDE310/main/templates/test.html",
+		"/Users/soco/dev/projects/HCDE310/static/img/glyphicons-halflings.png",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/import_sections.py",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/imptest.py",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/utils.py",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/import_evals.py",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/wipedb.py",
+		"/Users/soco/dev/projects/HCDE310/data_import/CourseGrabberCode.py",
+		"/Users/soco/dev/projects/HCDE310/main/admin.py",
+		"/Users/soco/dev/projects/HCDE310/main/management/commands/import_curricula.py",
+		"/Users/soco/dev/projects/HCDE310/db/create.sql",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/CONJ.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/DANISH.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/EURO.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/FINN.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/HUBIO.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/JSIS.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/NORW.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/RELIG.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SIS.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISA.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISAF.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISCA.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISEA.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISJE.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISLA.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SWED.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISME.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISSA.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/coursedata/SISSE.csv",
+		"/Users/soco/dev/projects/HCDE310/main/templates/instructor.html",
+		"/Users/soco/dev/projects/HCDE310/data_import/import_courses.py",
+		"/Users/soco/dev/projects/HCDE310/data_import/evaluations.py",
+		"/Users/soco/dev/projects/HCDE310/data_import/find_rating_types.py",
+		"/Users/soco/dev/projects/HCDE310/data_import/eval_grabber.py",
+		"/Users/soco/dev/projects/HCDE310/data/curriculums.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/curriculum_grabber.py",
+		"/Users/soco/dev/projects/HCDE310/data_import/curriculums.csv",
+		"/Users/soco/dev/projects/HCDE310/data_import/CourseGrabber.py",
+		"/Users/soco/Library/Application Support/Sublime Text 2/Packages/TidyJSON/TidyJSON.sublime-settings",
+		"/Users/soco/dev/projects/HCDE310/data_import/uw_services_test.py",
+		"/Users/soco/dev/projects/mysite/mysite/wsgi.py",
+		"/Users/soco/dev/projects/hcde310/hcde310/hcde310.wsgi",
+		"/Users/soco/dev/projects/hcde310/hcde310/wsgi.py",
+		"/Users/soco/dev/projects/mysite/mysite/settings.py",
+		"/Users/soco/dev/projects/HCDE310/HCDE310/HCDE310.wsgi",
+		"/Users/soco/dev/projects/HCDE310/HCDE310/wsgi.py",
+		"/Users/soco/evals3.csv",
+		"/Users/soco/dev/projects/HCDE310/management/commands/import_evals.py",
+		"/Users/soco/Downloads/buddypress/bp-core/admin/bp-core-update.php",
+		"/Users/soco/Downloads/buddypress-skeleton-component/includes/bp-example-loader.php",
+		"/Users/soco/Downloads/buddypress-skeleton-component/includes/bp-example-filters.php"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+			"/Users/soco/dev/projects/HCDE310",
+			"/Users/soco/Downloads/buddypress"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"iso",
+			"5",
+			"retwee",
+			"k['rating",
+			"retweet",
+			"colorbrewer",
+			"2",
+			"decode",
+			"encode",
+			"unicode",
+			"encode",
+			"293118534144376800",
+			"\"(\\d),(\\d*)\"",
+			"?",
+			"retweet",
+			"screen",
+			"pretty",
+			"outfile",
+			"infile",
+			"filename",
+			", ",
+			"-(",
+			"\\t  \\t",
+			"\\$",
+			"$",
+			",",
+			"(\\t *\\t)",
+			">\n",
+			"remove",
+			"click",
+			"details",
+			"query",
+			"//",
+			"console.",
+			"extend",
+			"console.",
+			"parseQuery",
+			"parseQueryString",
+			"setger",
+			"q =",
+			"buildQuery",
+			"starttime",
+			"value",
+			" checked=\"checked\"",
+			"checked",
+			"searchview",
+			"EC",
+			"ger[]",
+			"ger",
+			"change",
+			"events",
+			"start",
+			"query",
+			"spin",
+			"append",
+			"tbody",
+			"el:",
+			"idcurr",
+			"related",
+			"Inverse",
+			"inverse",
+			"navbarInverseBackground",
+			"/scheduler",
+			"scheduler",
+			"/scheduler",
+			"scheduler",
+			"templ",
+			"staticfile",
+			"staticfiles",
+			"print",
+			"AddSection",
+			"course",
+			"AddCourse",
+			"save",
+			"quarters",
+			"day",
+			"quarter",
+			"MeetingType",
+			"meeting",
+			"iddepartment",
+			"idDepartment",
+			"Department",
+			"Instructors",
+			"Ratings",
+			"Instances",
+			"Department",
+			"Instance",
+			"Department",
+			"GetDept",
+			"Department",
+			"GetDept",
+			"Instance",
+			"Department",
+			"AddDept",
+			"Department",
+			"instance",
+			"Instance",
+			"Courses",
+			"Departments",
+			"admin",
+			"-",
+			"print",
+			"url",
+			"sort",
+			" {4}",
+			"([^\\t]*)\\t*",
+			"\\t*",
+			"( ){4}",
+			"path",
+			"\\* \\*\\*(?!.*\\(required\\))(.*)\\*\\*",
+			"HCDE",
+			"prefix",
+			"^\\#(.*)$",
+			"^#(.*)$",
+			"^(.*)$",
+			"==",
+			"(rating\\[\"\\w*\"\\])",
+			"self.headerDict\\[('\\w*')\\]",
+			"self.headerDict\\['(\\w*)'\\]",
+			"regist",
+			"password",
+			"user"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"\\1\\2",
+			"outfilename",
+			"infilename",
+			"infile",
+			"filename",
+			",",
+			"\\t",
+			"",
+			"\\t",
+			"",
+			"{{BASE_URL}}",
+			"idcurriculum",
+			"Curriculum",
+			"Instructor",
+			"Rating",
+			"Section",
+			"Curriculum",
+			"Section",
+			"Curriculum",
+			"GetCurriculum",
+			"Curriculum",
+			"GetCurriculum",
+			"Section",
+			"Curriculum",
+			"AddCurriculum",
+			"Curricula",
+			"Section",
+			"Course",
+			"Department",
+			"GetDept",
+			"",
+			"\\t",
+			"\\1,",
+			", ",
+			"\\t",
+			"curriculums",
+			"\\* \\1\\2",
+			"\\* \\2",
+			"hcde",
+			"\\1",
+			"#\\1",
+			">",
+			"\\1 if len(\\1) == 0 else None",
+			"\\1"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 64.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 182.0,
+	"status_bar_visible": true
+}

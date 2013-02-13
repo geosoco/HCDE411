@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Cars</title>
+        <script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+        <script type="text/javascript" src="js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="js/d3.v3.min.js"></script>
+        <script type="text/javascript" src="js/colorbrewer.js"></script>
+        <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="css/colorbrewer.css" rel="stylesheet" type="text/css">
+
+
+        <style type="text/css">
+            body {
+                padding-top: 10px;
+            }
+            
+            #graph {
+                font: 14px sans-serif;
+                /*
+                shape-rendering: crispEdges;
+                */
+            }
+                          
+              .axis text {
+                  font-family: sans-serif;
+                  font-size: 10px;
+                  font-color: #aaa;
+                  fill: #666;
+                  stroke-width:0px;
+              }
+
+              .axis {
+                shape-rendering: crispEdges;
+              }
+
+
+              .axis line {
+                stroke: #ccc;
+                stroke-width: 1px;
+              }
+
+              .axis .minor {
+                stroke: #f0f0f0;
+              }
+
+              g.axis {
+                fill: #ccc;
+                background-color: #ccc;
+              }
+
+              .axis path {
+                fill: none;
+                stroke: #888;
+                stroke-width: 1px;
+                shape-rendering: crispEdges;
+              }
+
+              .axis line.tick {
+                stroke: #ccc;
+                stroke-width: 1px;
+              }
+
+              #sessions {
+                overflow-x: scroll;
+              }
+
+              .day {
+                stroke: #000;
+                stroke-width: 1px;
+                shape-rendering: crispEdges;
+              }
+
+              path.line {
+                fill: none;
+                stroke: #666;
+                stroke-width: 1px;
+                transition: all 0.5s;
+              }
+
+              path.line:hover {
+                stroke: #f00;
+                stroke-width: 3px;
+                transition: stroke 0.1s, stroke-width 0.1s;
+                -webkit-transition: stroke 0.1s, stroke-width 0.1s;
+                -moz-transition: stroke 0.1s, stroke-width 0.1s;
+                -o-transition: stroke 0.1s, stroke-width 0.1s;
+              }
+
+        </style>
+        <script>
+            
+            var width = 1000,
+                height = 600,
+                m = [30, 30, 30, 30],
+                labelWidth = 30,
+                yAxisWidth = 10,
+                xAxisHeight = 20,
+                graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
+                graphHeight = height - xAxisHeight - m[0] - m[2];
+
+            var selectedYear = 2004, isSelectingDate = false;
+
+
+            console.log('graphWidth: ' + graphWidth);
+            console.log('graphHeight: ' + graphHeight);
+
+            function getNominalDomain(arr, fieldname) {
+                var ret = {};
+                arr.forEach(function(d,i){
+                  var item = d[fieldname].toLowerCase();
+                  ret[item] = 1;
+                });
+
+                return d3.keys(ret);
+            }
+
+            function getOrdinalDomain(arr, fieldname) {
+                var ret = {
+                  min: Number.MAX_VALUE,
+                  max: Number.MIN_VALUE,
+                  values: []
+                };
+                var values = {};
+
+                arr.forEach(function(d,i){
+                  var item = d[fieldname];
+                  ret.min = Math.min(ret.min, item);
+                  ret.max = Math.max(ret.max, item);
+                  values[item] = 1;
+                });
+
+                ret.values = d3.keys(values);
+
+                return ret;
+            }
+
+            function getDescriptiveStats(arr, fieldname) {
+                var ret = {
+                  min: Number.MAX_VALUE,
+                  max: Number.MIN_VALUE,
+                  sum: null,
+                  mean: null,
+                };
+
+                arr.forEach(function(d,i){
+                  var item = +d[fieldname];
+                  ret.min = Math.min(ret.min, item);
+                  ret.max = Math.max(ret.max, item);
+                  ret.sum += item;
+                });
+
+                ret.mean = ret.sum / arr.length;
+
+                return ret;
+            }
+
+
+            //
+            //
+            //
+            //
+            //
+            function drawSessions(data) {
+              var year_width = 350,
+                  width = year_width * (data.length+1),
+                  height = 100,
+                  format = d3.time.format("%b %d");
+
+
+              var years_xscale = d3.scale.ordinal()
+                        .domain(d3.keys(dataMap))
+                        .rangeRoundBands([0,width],0);
+
+              var color = d3.scale.quantize()
+                        .domain([0, 1000])
+                        .range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
+
+              var session_scales = data.map(function(d,i){
+
+                return d3.scale.ordinal()
+                  .domain(d.values.map(function(d2) { return d2.key; }))
+                  .rangeRoundBands([0,year_width-100], 0);
+              });
+
+              var svg = d3.select("#sessions")
+                        .append("svg")
+                        .attr("width", width)
+                        .attr("height", height);
+
+              var sessionGraph = svg.append("g")
+                        .attr("class", "sessions");
+
+              // sessions
+              years = sessionGraph.selectAll("g")
+                  .data(data)
+                  .enter()
+                  .append("g")
+                  .attr("class", "Greys")
+                  .attr("transform", function(d,i) {
+                    //console.log(d.key + " - " + years_xscale(d.key));
+                    return "translate(" + years_xscale(d.key) + ", 0)";
+                  });
+
+              years.append("text")
+                  .attr("text-anchor", "start")
+                  .attr("y", 12)
+                  .text(function(d){
+                    return d.key;
+                  });
+
+              days = years.selectAll("g")
+                .data(function(d,i){
+                    return d.values.map(function(d2){
+                      return {scale: session_scales[i], value: d2.values, date: d2.key}
+                    });
+                  })
+                .enter()
+                .append("g")
+                .attr("transform", function(d){
+                  return "translate(" + d.scale(d.date) + ",0)";
+                })
+                .on("click", function(ev){
+                  selected_date = ev.date;
+                  selected_values = ev.value;
+                  console.dir(ev);
+                  console.dir("clicked " + ev.date);
+                  sessionData = transformPairs(ev.value);
+                  drawData(sessionData);
+                });
+
+              days.append("rect")
+                  .attr("x", 0)
+                  .attr("y", 16)
+                  .attr("width", 16)
+                  .attr("height", 16)
+                  .attr("class", function(d){ return "day " + color(d.value.length); });
+
+              days.append("text")
+                  .attr("x", 0)
+                  .attr("y", 35)
+                  .attr("text-anchor", "start")
+                  .text(function(d){ return format(new Date(d.date)); })
+                  .attr("transform", "translate(38,38)rotate(90)")
+            }
+
+
+            //
+            //
+            //
+            //
+            //
+            function initYearButtons() {
+                var yearButtons = d3.select("#yearselect > ul")
+                      .selectAll("li")
+                      .data(dataMap)
+                      .enter().append("li")
+                      .append("a")
+                      .attr("href", "#")
+                      .text(function(d){ 
+                        return d.key; 
+                      });
+
+                $('#yearselect li:first-child').attr('class', 'active');
+                $('#yearselect li').click(function(ev){
+                  console.log('clicked: ' + ev.target.innerText);
+                  console.dir(ev);
+                  console.dir(dataMap[ev.target.innerText]);
+                  $('#yearselect li').attr('class','');
+                  $(ev.target).parent().attr('class','active');
+                  selectedYear = ev.target.innerText;
+                });
+            }
+
+
+            //
+            //
+            //
+            //
+            //
+            function transformPairs(data) {
+              res = {};
+              var timerange = [Number.MAX_VALUE, Number.MIN_VALUE];
+              var range = [Number.MAX_VALUE, Number.MIN_VALUE];
+
+              data.forEach(function(d,i){
+                for(var pair in d3.values(possible_pairs)) {
+                  var pair_name = possible_pairs[pair];
+                  var value = d[pair_name];
+
+                  timerange[0] = Math.min(timerange[0],Date.parse(d.time));
+                  timerange[1] = Math.max(timerange[1],Date.parse(d.time));
+                  range[0] = Math.min(range[0], +d.id);
+                  range[1] = Math.max(range[1], +d.id);
+                  if(pair_name in d && value != undefined && value != null && value != "") {
+                    // check if our data is in the pair already
+                    if(!(pair_name in res)){
+                      res[pair_name] = {}
+                    }
+
+                    //res[pair_name][d.time] = d[pair_name];
+                    res[pair_name][d.id] = d[pair_name];
+                    //console.dir(d);
+                  }
+                }
+              });
+
+              res['timerange'] = timerange;
+              res['range'] = range;
+
+              console.log("after transform");
+              console.dir(res);
+              return res;
+            }
+
+
+            function calcMeanAndWidth(data) {
+
+            }
+
+
+
+
+            function drawData(data) {
+              //console.dir(data);
+              var line = d3.svg.line()
+                  .interpolate("linear")
+                  .x(function(d) { 
+                    return x_scale(+d.time); 
+                  })
+                  .y(function(d) { 
+                    return y_scale(+d.value); 
+                  });
+
+
+              //
+              // scales
+              //
+              y_scale = d3.scale.linear()
+                  .domain( [1.0, 0] )
+                  .range( [0,graphHeight] );
+
+              /*
+              x_scale = d3.time.scale()
+                  .domain( [new Date(data['range'][0]), new Date(data['range'][1])] )
+                  .range([0,graphWidth]);
+              */
+
+              x_scale = d3.scale.linear()
+                  .domain( data['range'] )
+                  .range([0,graphWidth]);
+
+              //var session_scales = dataMap.
+              //var 
+
+
+              //
+              // axes
+              //
+
+              var yAxis = d3.svg.axis()
+                  .scale(y_scale)
+                  .orient("left");
+
+              var xAxis = d3.svg.axis()
+                  .scale(x_scale)
+                  .orient("bottom");
+
+              //
+              // graph
+              //
+              $('#graph').empty();
+              
+              var svg = d3.select("#graph")
+                  .append("svg")
+                  .attr("width", width)
+                  .attr("height", height);
+
+
+              // draw axes
+              svg.append("g")
+                  .attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
+                  .attr("class", "axis")
+                  .call(xAxis);
+
+              svg.append("g")
+                  .attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
+                  .attr("class", "axis")
+                  .call(yAxis);
+
+
+              var groups = svg.selectAll("g.data")
+                  .data($.map(data,function(v,k){
+                    return {value: v, time: k}; 
+                  }))
+                  .enter().append("g")
+                  .attr("transform", function(d){
+                    return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
+                  });
+
+
+              groups.selectAll(".line")
+                  .data(function(d){
+                    //console.dir(d);
+                    return [$.map(d.value,function(v,k){
+                      return {value: v, time: k}; 
+                    })];
+                  })
+                  .enter().append("path")
+                  .attr("class", "line")
+                  .attr("d", line);
+
+
+            }
+
+
+
+            //
+            // ready
+            //
+            $(document).ready(function() {  
+                $('#graph').empty();
+                format = d3.time.format("%Y-%m-%d %H:%M:%S");
+
+                //var spinner = $('#graph').first().spin("small" );
+
+
+                d3.csv("data/10line.csv", function(csv) {
+                    console.log('got csv!');
+                    console.dir(csv);
+                    data = csv;
+
+                    /*
+                    data = csv.sort(function(a,b){
+                      var dateA = format.parse(a.time);
+                      var dateB = format.parse(b.time);
+                      return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
+                    });
+
+                    console.log("sorted");
+                    console.dir(data);
+                    */
+
+
+
+                    dataMap = d3.nest()
+                      .key(function(d){
+                        return ((new Date(format.parse(d.time))).getYear() + 1900);
+                      })
+                      .key(function(d){ 
+                        fulldate = new Date(format.parse(d.time));
+                        date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
+                        return format(date); 
+                      })
+                      .entries(data);
+
+                    console.dir(dataMap);
+                    //dataMap = dataMap.map();
+
+                    console.dir(d3.keys(dataMap));
+
+                    // grab our possible pairs
+                    possible_pairs = Object.keys(csv[0]);
+                    possible_pairs = possible_pairs.filter(function(d){
+                      return (d.indexOf('-') != -1);
+                    })
+                    console.dir(possible_pairs);
+
+
+
+                    //
+                    //
+                    //
+
+
+
+
+                    // interaction initi
+                    initYearButtons();
+                    drawSessions(dataMap);
+                });
+
+            });
+        </script>
+
+    </head>
+    <body>
+        
+        <div class="container-fluid">
+            <div class="row-fluid">
+                <div class="span12" id="infoview">
+                    <legend>Inter-rater Reliability</legend>
+                    <div id="yearselect">
+                      <ul class="nav nav-pills"></ul>
+                    </div>
+                    <div id="sessions">
+                    </div>
+                    <div id="graph">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>        
+    </body>
+
+</html>
