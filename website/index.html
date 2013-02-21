@@ -91,11 +91,11 @@
                   return "translate(" + width + ",0)";
                 })
                 .on("click", function(ev){
-                  selected_date = ev.date;
-                  selected_values = ev.value;
+                  selected_date = ev.key;
+                  selected_values = ev.values;
                   console.dir(ev);
-                  console.dir("clicked " + ev.date);
-                  sessionData = transformPairs(ev.value);
+                  console.dir("clicked " + ev.key);
+                  sessionData = transformPairs(ev.values);
                   drawData(sessionData);
                 });
 
