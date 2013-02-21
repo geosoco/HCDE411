@@ -1,0 +1,76 @@
+body {
+  padding-top: 10px;
+}
+
+#graph {
+  font: 14px sans-serif;
+  /*
+  shape-rendering: crispEdges;
+  */
+}
+            
+.axis text {
+    font-family: sans-serif;
+    font-size: 10px;
+    font-color: #aaa;
+    fill: #666;
+    stroke-width:0px;
+}
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+
+.axis line {
+  stroke: #ccc;
+  stroke-width: 1px;
+}
+
+.axis .minor {
+  stroke: #f0f0f0;
+}
+
+g.axis {
+  fill: #ccc;
+  background-color: #ccc;
+}
+
+.axis path {
+  fill: none;
+  stroke: #888;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+}
+
+.axis line.tick {
+  stroke: #ccc;
+  stroke-width: 1px;
+}
+
+#sessions {
+  overflow-x: scroll;
+}
+
+.day {
+  stroke: #000;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+}
+
+path.line {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1px;
+  transition: all 0.5s;
+}
+
+path.line:hover {
+  stroke: #f00;
+  stroke-width: 3px;
+  transition: stroke 0.1s, stroke-width 0.1s;
+  -webkit-transition: stroke 0.1s, stroke-width 0.1s;
+  -moz-transition: stroke 0.1s, stroke-width 0.1s;
+  -o-transition: stroke 0.1s, stroke-width 0.1s;
+}
+

@@ -2,92 +2,22 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>Cars</title>
+        <title>Inter-rater Reliability</title>
         <script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
         <script type="text/javascript" src="js/bootstrap.min.js"></script>
         <script type="text/javascript" src="js/d3.v3.min.js"></script>
         <script type="text/javascript" src="js/colorbrewer.js"></script>
+        <script type="text/javascript" src="js/underscore.js"></script>
+        <script type="text/javascript" src="js/backbone.js"></script>
+        <script type="text/javascript" src="js/spin.min.js"></script>
+        <script type="text/javascript" src="js/spin_helper.js"></script>
+        <script type="text/javascript" src="js/app.js"></script>
         <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
         <link href="css/colorbrewer.css" rel="stylesheet" type="text/css">
+        <link href="css/default.css" rel="stylesheet" type="text/css">
 
 
         <style type="text/css">
-            body {
-                padding-top: 10px;
-            }
-            
-            #graph {
-                font: 14px sans-serif;
-                /*
-                shape-rendering: crispEdges;
-                */
-            }
-                          
-              .axis text {
-                  font-family: sans-serif;
-                  font-size: 10px;
-                  font-color: #aaa;
-                  fill: #666;
-                  stroke-width:0px;
-              }
-
-              .axis {
-                shape-rendering: crispEdges;
-              }
-
-
-              .axis line {
-                stroke: #ccc;
-                stroke-width: 1px;
-              }
-
-              .axis .minor {
-                stroke: #f0f0f0;
-              }
-
-              g.axis {
-                fill: #ccc;
-                background-color: #ccc;
-              }
-
-              .axis path {
-                fill: none;
-                stroke: #888;
-                stroke-width: 1px;
-                shape-rendering: crispEdges;
-              }
-
-              .axis line.tick {
-                stroke: #ccc;
-                stroke-width: 1px;
-              }
-
-              #sessions {
-                overflow-x: scroll;
-              }
-
-              .day {
-                stroke: #000;
-                stroke-width: 1px;
-                shape-rendering: crispEdges;
-              }
-
-              path.line {
-                fill: none;
-                stroke: #666;
-                stroke-width: 1px;
-                transition: all 0.5s;
-              }
-
-              path.line:hover {
-                stroke: #f00;
-                stroke-width: 3px;
-                transition: stroke 0.1s, stroke-width 0.1s;
-                -webkit-transition: stroke 0.1s, stroke-width 0.1s;
-                -moz-transition: stroke 0.1s, stroke-width 0.1s;
-                -o-transition: stroke 0.1s, stroke-width 0.1s;
-              }
-
         </style>
         <script>
             
@@ -106,55 +36,6 @@
             console.log('graphWidth: ' + graphWidth);
             console.log('graphHeight: ' + graphHeight);
 
-            function getNominalDomain(arr, fieldname) {
-                var ret = {};
-                arr.forEach(function(d,i){
-                  var item = d[fieldname].toLowerCase();
-                  ret[item] = 1;
-                });
-
-                return d3.keys(ret);
-            }
-
-            function getOrdinalDomain(arr, fieldname) {
-                var ret = {
-                  min: Number.MAX_VALUE,
-                  max: Number.MIN_VALUE,
-                  values: []
-                };
-                var values = {};
-
-                arr.forEach(function(d,i){
-                  var item = d[fieldname];
-                  ret.min = Math.min(ret.min, item);
-                  ret.max = Math.max(ret.max, item);
-                  values[item] = 1;
-                });
-
-                ret.values = d3.keys(values);
-
-                return ret;
-            }
-
-            function getDescriptiveStats(arr, fieldname) {
-                var ret = {
-                  min: Number.MAX_VALUE,
-                  max: Number.MIN_VALUE,
-                  sum: null,
-                  mean: null,
-                };
-
-                arr.forEach(function(d,i){
-                  var item = +d[fieldname];
-                  ret.min = Math.min(ret.min, item);
-                  ret.max = Math.max(ret.max, item);
-                  ret.sum += item;
-                });
-
-                ret.mean = ret.sum / arr.length;
-
-                return ret;
-            }
 
 
             //
@@ -283,27 +164,45 @@
               res = {};
               var timerange = [Number.MAX_VALUE, Number.MIN_VALUE];
               var range = [Number.MAX_VALUE, Number.MIN_VALUE];
+              var bins = {};
+              var histogram = {};
 
               data.forEach(function(d,i){
                 for(var pair in d3.values(possible_pairs)) {
                   var pair_name = possible_pairs[pair];
                   var value = d[pair_name];
 
+                  var linenum = +d.id;
+
                   timerange[0] = Math.min(timerange[0],Date.parse(d.time));
                   timerange[1] = Math.max(timerange[1],Date.parse(d.time));
-                  range[0] = Math.min(range[0], +d.id);
-                  range[1] = Math.max(range[1], +d.id);
+                  range[0] = Math.min(range[0], linenum);
+                  range[1] = Math.max(range[1], linenum);
                   if(pair_name in d && value != undefined && value != null && value != "") {
+                    if(!(linenum in bins)) {
+                      bins[linenum] = {};
+                    }
+                    bins[linenum][pair_name] = +value;
+
+
                     // check if our data is in the pair already
                     if(!(pair_name in res)){
                       res[pair_name] = {}
                     }
 
                     //res[pair_name][d.time] = d[pair_name];
-                    res[pair_name][d.id] = d[pair_name];
-                    //console.dir(d);
+                    res[pair_name][linenum] = d[pair_name];
+
+                    // histogram
+                    if( !(value in histogram)) {
+                      histogram[value] = 0;
+                    }
+                    histogram[value]++;
+
                   }
                 }
+
+
               });
 
               res['timerange'] = timerange;
@@ -311,6 +210,9 @@
 
               console.log("after transform");
               console.dir(res);
+              console.log('bins');
+              console.dir(bins);
+              console.dir(histogram);
               return res;
             }
 
@@ -416,70 +318,36 @@
 
 
 
+            /*
+             * 1. First find all unique line ids in the data
+             * 2. Aggregate all agreement values in that dataset
+             * 3. Caclulate Mean, stddev
+             * 4. Calculate appropriate UB/LB confidence intervals
+             *
+             *
+             *
+             *
+             */
+            function processSessionData(data) {
+              bins = {}
+
+
+
+            }
+
+
+
             //
             // ready
             //
             $(document).ready(function() {  
                 $('#graph').empty();
                 format = d3.time.format("%Y-%m-%d %H:%M:%S");
+                dayFormat = d3.time.format("%Y-%m-%d");
 
                 //var spinner = $('#graph').first().spin("small" );
 
-
-                d3.csv("data/10line.csv", function(csv) {
-                    console.log('got csv!');
-                    console.dir(csv);
-                    data = csv;
-
-                    /*
-                    data = csv.sort(function(a,b){
-                      var dateA = format.parse(a.time);
-                      var dateB = format.parse(b.time);
-                      return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
-                    });
-
-                    console.log("sorted");
-                    console.dir(data);
-                    */
-
-
-
-                    dataMap = d3.nest()
-                      .key(function(d){
-                        return ((new Date(format.parse(d.time))).getYear() + 1900);
-                      })
-                      .key(function(d){ 
-                        fulldate = new Date(format.parse(d.time));
-                        date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
-                        return format(date); 
-                      })
-                      .entries(data);
-
-                    console.dir(dataMap);
-                    //dataMap = dataMap.map();
-
-                    console.dir(d3.keys(dataMap));
-
-                    // grab our possible pairs
-                    possible_pairs = Object.keys(csv[0]);
-                    possible_pairs = possible_pairs.filter(function(d){
-                      return (d.indexOf('-') != -1);
-                    })
-                    console.dir(possible_pairs);
-
-
-
-                    //
-                    //
-                    //
-
-
-
-
-                    // interaction initi
-                    initYearButtons();
-                    drawSessions(dataMap);
-                });
+                app = new IRAApp;
 
             });
         </script>
