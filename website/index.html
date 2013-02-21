@@ -28,7 +28,8 @@
                 yAxisWidth = 10,
                 xAxisHeight = 20,
                 graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
-                graphHeight = height - xAxisHeight - m[0] - m[2];
+                graphHeight = height - xAxisHeight - m[0] - m[2],
+                sessionSVG = null;
 
             var selectedYear = 2004, isSelectingDate = false;
 
@@ -44,63 +45,50 @@
             //
             //
             function drawSessions(data) {
-              var year_width = 350,
-                  width = year_width * (data.length+1),
+              var width = 600,
                   height = 100,
                   format = d3.time.format("%b %d");
 
+              // sort our data first
+              data.values.sort(function(a,b){
+                return Date.parse(a.key) - Date.parse(b.key);
+              });
 
-              var years_xscale = d3.scale.ordinal()
-                        .domain(d3.keys(dataMap))
+
+              // build our scale
+              var x_scale = d3.scale.ordinal()
+                        .domain(data.values.map(function(d2) { return d2.key; }))
                         .rangeRoundBands([0,width],0);
 
               var color = d3.scale.quantize()
-                        .domain([0, 1000])
+                        .domain([0, 32])
                         .range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
 
-              var session_scales = data.map(function(d,i){
+              sessionSVG = sessionSVG || d3.select("#sessions")
+                          .append("svg")
+                          .attr("width", width)
+                          .attr("height", height)
+                          .append("g")
+                          .attr("class", "Greys");
 
-                return d3.scale.ordinal()
-                  .domain(d.values.map(function(d2) { return d2.key; }))
-                  .rangeRoundBands([0,year_width-100], 0);
-              });
 
-              var svg = d3.select("#sessions")
-                        .append("svg")
-                        .attr("width", width)
-                        .attr("height", height);
 
-              var sessionGraph = svg.append("g")
-                        .attr("class", "sessions");
 
-              // sessions
-              years = sessionGraph.selectAll("g")
-                  .data(data)
-                  .enter()
-                  .append("g")
-                  .attr("class", "Greys")
-                  .attr("transform", function(d,i) {
-                    //console.log(d.key + " - " + years_xscale(d.key));
-                    return "translate(" + years_xscale(d.key) + ", 0)";
-                  });
+              daysGraph = sessionSVG.selectAll("g.session")
+                .data(data.values, function(d,i){
+                  return d.key;
+                });
 
-              years.append("text")
-                  .attr("text-anchor", "start")
-                  .attr("y", 12)
-                  .text(function(d){
-                    return d.key;
-                  });
-
-              days = years.selectAll("g")
-                .data(function(d,i){
-                    return d.values.map(function(d2){
-                      return {scale: session_scales[i], value: d2.values, date: d2.key}
-                    });
-                  })
-                .enter()
-                .append("g")
+              daysGraph.transition()
                 .attr("transform", function(d){
-                  return "translate(" + d.scale(d.date) + ",0)";
+                  return "translate(" + x_scale(d.key) + ",0)";
+                });
+
+              var days = daysGraph.enter()
+                .append("g")
+                .attr("class", "session")
+                .attr("transform", function(d){
+                  return "translate(" + width + ",0)";
                 })
                 .on("click", function(ev){
                   selected_date = ev.date;
@@ -111,19 +99,35 @@
                   drawData(sessionData);
                 });
 
+              
+              daysGraph.exit().transition(100).attr("transform", function(d){
+                return "translate(-30,0)";
+              })
+              .remove();
+
+
+
+
               days.append("rect")
                   .attr("x", 0)
                   .attr("y", 16)
                   .attr("width", 16)
                   .attr("height", 16)
-                  .attr("class", function(d){ return "day " + color(d.value.length); });
+                  .attr("class", function(d){ 
+                    return "day " + color(d.values.length); 
+                  });
 
               days.append("text")
                   .attr("x", 0)
                   .attr("y", 35)
                   .attr("text-anchor", "start")
-                  .text(function(d){ return format(new Date(d.date)); })
-                  .attr("transform", "translate(38,38)rotate(90)")
+                  .text(function(d){ return format(new Date(d.key)); })
+                  .attr("transform", "translate(38,38)rotate(90)");
+
+              days.transition(100)
+                  .attr("transform", function(d){
+                    return "translate(" + x_scale(d.key) + ",0)";
+                  });
             }
 
 
@@ -141,9 +145,14 @@
                       .attr("href", "#")
                       .text(function(d){ 
                         return d.key; 
+                      })
+                      .datum(function(d,i){
+                        return {idx: i}
                       });
 
                 $('#yearselect li:first-child').attr('class', 'active');
+                drawSessions(dataMap[0]);
+
                 $('#yearselect li').click(function(ev){
                   console.log('clicked: ' + ev.target.innerText);
                   console.dir(ev);
@@ -151,6 +160,7 @@
                   $('#yearselect li').attr('class','');
                   $(ev.target).parent().attr('class','active');
                   selectedYear = ev.target.innerText;
+                  drawSessions(dataMap[ev.target.__data__.idx]);
                 });
             }
 
@@ -379,7 +389,7 @@
 
                     // interaction initi
                     initYearButtons();
-                    drawSessions(dataMap);
+                    //drawSessions(dataMap);
 
                     spinner.spin(false);
 
