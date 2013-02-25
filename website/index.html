@@ -1,421 +1,560 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>Inter-rater Reliability</title>
-        <script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
-        <script type="text/javascript" src="js/bootstrap.min.js"></script>
-        <script type="text/javascript" src="js/d3.v3.min.js"></script>
-        <script type="text/javascript" src="js/colorbrewer.js"></script>
-        <script type="text/javascript" src="js/underscore.js"></script>
-        <script type="text/javascript" src="js/backbone.js"></script>
-        <script type="text/javascript" src="js/spin.min.js"></script>
-        <script type="text/javascript" src="js/spin_helper.js"></script>
-        <script type="text/javascript" src="js/app.js"></script>
-        <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
-        <link href="css/colorbrewer.css" rel="stylesheet" type="text/css">
-        <link href="css/default.css" rel="stylesheet" type="text/css">
-
-
-        <style type="text/css">
-        </style>
-        <script>
-            
-            var width = 1000,
-                height = 600,
-                m = [30, 30, 30, 30],
-                labelWidth = 30,
-                yAxisWidth = 10,
-                xAxisHeight = 20,
-                graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
-                graphHeight = height - xAxisHeight - m[0] - m[2],
-                sessionSVG = null;
-
-            var selectedYear = 2004, isSelectingDate = false;
-
-
-            console.log('graphWidth: ' + graphWidth);
-            console.log('graphHeight: ' + graphHeight);
-
-
-
-            //
-            //
-            //
-            //
-            //
-            function drawSessions(data) {
-              var width = 600,
-                  height = 100,
-                  format = d3.time.format("%b %d");
-
-              // sort our data first
-              data.values.sort(function(a,b){
-                return Date.parse(a.key) - Date.parse(b.key);
-              });
-
-
-              // build our scale
-              var x_scale = d3.scale.ordinal()
-                        .domain(data.values.map(function(d2) { return d2.key; }))
-                        .rangeRoundBands([0,width],0);
-
-              var color = d3.scale.quantize()
-                        .domain([0, 32])
-                        .range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
-
-              sessionSVG = sessionSVG || d3.select("#sessions")
-                          .append("svg")
-                          .attr("width", width)
-                          .attr("height", height)
-                          .append("g")
-                          .attr("class", "Greys");
-
-
-
-
-              daysGraph = sessionSVG.selectAll("g.session")
-                .data(data.values, function(d,i){
-                  return d.key;
-                });
-
-              daysGraph.transition()
-                .attr("transform", function(d){
-                  return "translate(" + x_scale(d.key) + ",0)";
-                });
-
-              var days = daysGraph.enter()
-                .append("g")
-                .attr("class", "session")
-                .attr("transform", function(d){
-                  return "translate(" + width + ",0)";
-                })
-                .on("click", function(ev){
-                  selected_date = ev.key;
-                  selected_values = ev.values;
-                  console.dir(ev);
-                  console.dir("clicked " + ev.key);
-                  sessionData = transformPairs(ev.values);
-                  drawData(sessionData);
-                });
-
-              
-              daysGraph.exit().transition(100).attr("transform", function(d){
-                return "translate(-30,0)";
-              })
-              .remove();
-
-
-
-
-              days.append("rect")
-                  .attr("x", 0)
-                  .attr("y", 16)
-                  .attr("width", 16)
-                  .attr("height", 16)
-                  .attr("class", function(d){ 
-                    return "day " + color(d.values.length); 
-                  });
-
-              days.append("text")
-                  .attr("x", 0)
-                  .attr("y", 35)
-                  .attr("text-anchor", "start")
-                  .text(function(d){ return format(new Date(d.key)); })
-                  .attr("transform", "translate(38,38)rotate(90)");
-
-              days.transition(100)
-                  .attr("transform", function(d){
-                    return "translate(" + x_scale(d.key) + ",0)";
-                  });
-            }
-
-
-            //
-            //
-            //
-            //
-            //
-            function initYearButtons() {
-                var yearButtons = d3.select("#yearselect > ul")
-                      .selectAll("li")
-                      .data(dataMap)
-                      .enter().append("li")
-                      .append("a")
-                      .attr("href", "#")
-                      .text(function(d){ 
-                        return d.key; 
-                      })
-                      .datum(function(d,i){
-                        return {idx: i}
-                      });
-
-                $('#yearselect li:first-child').attr('class', 'active');
-                drawSessions(dataMap[0]);
-
-                $('#yearselect li').click(function(ev){
-                  console.log('clicked: ' + ev.target.innerText);
-                  console.dir(ev);
-                  console.dir(dataMap[ev.target.innerText]);
-                  $('#yearselect li').attr('class','');
-                  $(ev.target).parent().attr('class','active');
-                  selectedYear = ev.target.innerText;
-                  drawSessions(dataMap[ev.target.__data__.idx]);
-                });
-            }
-
-
-            //
-            //
-            //
-            //
-            //
-            function transformPairs(data) {
-              res = {};
-              var timerange = [Number.MAX_VALUE, Number.MIN_VALUE];
-              var range = [Number.MAX_VALUE, Number.MIN_VALUE];
-              var bins = {};
-              var histogram = {};
-
-              data.forEach(function(d,i){
-                for(var pair in d3.values(possible_pairs)) {
-                  var pair_name = possible_pairs[pair];
-                  var value = d[pair_name];
-
-                  var linenum = +d.id;
-
-                  timerange[0] = Math.min(timerange[0],Date.parse(d.time));
-                  timerange[1] = Math.max(timerange[1],Date.parse(d.time));
-                  range[0] = Math.min(range[0], linenum);
-                  range[1] = Math.max(range[1], linenum);
-                  if(pair_name in d && value != undefined && value != null && value != "") {
-                    if(!(linenum in bins)) {
-                      bins[linenum] = {};
-                    }
-                    bins[linenum][pair_name] = +value;
-
-
-                    // check if our data is in the pair already
-                    if(!(pair_name in res)){
-                      res[pair_name] = {}
-                    }
-
-                    //res[pair_name][d.time] = d[pair_name];
-                    res[pair_name][linenum] = d[pair_name];
-
-                    // histogram
-                    if( !(value in histogram)) {
-                      histogram[value] = 0;
-                    }
-                    histogram[value]++;
-
-                  }
-                }
-
-
-              });
-
-              res['timerange'] = timerange;
-              res['range'] = range;
-
-              console.log("after transform");
-              console.dir(res);
-              console.log('bins');
-              console.dir(bins);
-              console.dir(histogram);
-              return res;
-            }
-
-
-            function calcMeanAndWidth(data) {
-
-            }
-
-
-
-
-            function drawData(data) {
-              //console.dir(data);
-              var line = d3.svg.line()
-                  .interpolate("linear")
-                  .x(function(d) { 
-                    return x_scale(+d.time); 
-                  })
-                  .y(function(d) { 
-                    return y_scale(+d.value); 
-                  });
-
-
-              //
-              // scales
-              //
-              y_scale = d3.scale.linear()
-                  .domain( [1.0, 0] )
-                  .range( [0,graphHeight] );
-
-              /*
-              x_scale = d3.time.scale()
-                  .domain( [new Date(data['range'][0]), new Date(data['range'][1])] )
-                  .range([0,graphWidth]);
-              */
-
-              x_scale = d3.scale.linear()
-                  .domain( data['range'] )
-                  .range([0,graphWidth]);
-
-              //var session_scales = dataMap.
-              //var 
-
-
-              //
-              // axes
-              //
-
-              var yAxis = d3.svg.axis()
-                  .scale(y_scale)
-                  .orient("left");
-
-              var xAxis = d3.svg.axis()
-                  .scale(x_scale)
-                  .orient("bottom");
-
-              //
-              // graph
-              //
-              $('#graph').empty();
-              
-              var svg = d3.select("#graph")
-                  .append("svg")
-                  .attr("width", width)
-                  .attr("height", height);
-
-
-              // draw axes
-              svg.append("g")
-                  .attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
-                  .attr("class", "axis")
-                  .call(xAxis);
-
-              svg.append("g")
-                  .attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
-                  .attr("class", "axis")
-                  .call(yAxis);
-
-
-              var groups = svg.selectAll("g.data")
-                  .data($.map(data,function(v,k){
-                    return {value: v, time: k}; 
-                  }))
-                  .enter().append("g")
-                  .attr("transform", function(d){
-                    return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
-                  });
-
-
-              groups.selectAll(".line")
-                  .data(function(d){
-                    //console.dir(d);
-                    return [$.map(d.value,function(v,k){
-                      return {value: v, time: k}; 
-                    })];
-                  })
-                  .enter().append("path")
-                  .attr("class", "line")
-                  .attr("d", line);
-
-
-            }
-
-
-
-            /*
-             * 1. First find all unique line ids in the data
-             * 2. Aggregate all agreement values in that dataset
-             * 3. Caclulate Mean, stddev
-             * 4. Calculate appropriate UB/LB confidence intervals
-             *
-             *
-             *
-             *
-             */
-            function processSessionData(data) {
-              bins = {}
-
-
-
-            }
-
-
-
-            //
-            // ready
-            //
-            $(document).ready(function() {  
-                $('#graph').empty();
-                format = d3.time.format("%Y-%m-%d %H:%M:%S");
-                dayFormat = d3.time.format("%Y-%m-%d");
-
-                var spinner = $('body').spin("small");
-
-                d3.csv("data/10line.csv", function(csv) {
-                    console.log('got csv!');
-                    console.dir(csv);
-                    data = csv;
-
-                    dataMap = d3.nest()
-                      .key(function(d){
-                        return ((new Date(format.parse(d.time))).getYear() + 1900);
-                      })
-                      .key(function(d){ 
-                        fulldate = new Date(format.parse(d.time));
-                        date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
-                        return dayFormat(date); 
-                      })
-                      .entries(data);
-
-                    console.log("dataMap");
-                    console.dir(dataMap);
-
-                    //dataMap = dataMap.map();
-
-                    console.dir(d3.keys(dataMap));
-
-                    // grab our possible pairs
-                    possible_pairs = Object.keys(csv[0]);
-                    possible_pairs = possible_pairs.filter(function(d){
-                      return (d.indexOf('-') != -1);
-                    });
-                    console.dir(possible_pairs);
-
-                    // interaction initi
-                    initYearButtons();
-                    //drawSessions(dataMap);
-
-                    spinner.spin(false);
-
-                });
-
-            });
-        </script>
-
-    </head>
-    <body>
-        
-        <div class="container-fluid">
-            <div class="row-fluid">
-                <div class="span12" id="infoview">
-                    <legend>Inter-rater Reliability</legend>
-                    <div id="yearselect">
-                      <ul class="nav nav-pills"></ul>
-                    </div>
-                    <div id="sessions">
-                    </div>
-                    <div id="graph">
-                        
-                    </div>
-                </div>
-            </div>
-        </div>        
-    </body>
+	<head>
+		<meta charset="utf-8">
+		<title>Inter-rater Reliability</title>
+		<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/d3.v3.js"></script>
+		<script type="text/javascript" src="js/colorbrewer.js"></script>
+		<script type="text/javascript" src="js/underscore.js"></script>
+		<script type="text/javascript" src="js/backbone.js"></script>
+		<script type="text/javascript" src="js/spin.min.js"></script>
+		<script type="text/javascript" src="js/spin_helper.js"></script>
+		<script type="text/javascript" src="js/app.js"></script>
+		<link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+		<link href="css/colorbrewer.css" rel="stylesheet" type="text/css">
+		<link href="css/default.css" rel="stylesheet" type="text/css">
+
+
+		<style type="text/css">
+		</style>
+		<script>
+			var sessionSVG = null;
+			var selectedYear = 2004, isSelectingDate = false;
+
+			//
+			//
+			//
+			//
+			//
+			function drawSessions(data) {
+				var width = 600,
+					height = 70,
+					format = d3.time.format("%b %d");
+
+				// sort our data first
+				data.values.sort(function(a,b){
+				return Date.parse(a.key) - Date.parse(b.key);
+				});
+
+
+				// build our scale
+				var x_scale = d3.scale.ordinal()
+						.domain(data.values.map(function(d2) { return d2.key; }))
+						.rangeRoundBands([0,width],0);
+
+				var color = d3.scale.quantize()
+						.domain([0, 32])
+						.range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
+
+				sessionSVG = sessionSVG || d3.select("#sessions")
+							.append("svg")
+							.attr("width", width)
+							.attr("height", height)
+							.append("g")
+							.attr("class", "Greys");
+
+
+
+
+				daysGraph = sessionSVG.selectAll("g.session")
+				.data(data.values, function(d,i){
+					return d.key;
+				});
+
+				daysGraph.transition()
+				.attr("transform", function(d){
+					return "translate(" + x_scale(d.key) + ",0)";
+				});
+
+				var days = daysGraph.enter()
+				.append("g")
+				.attr("class", "session")
+				.attr("transform", function(d){
+					return "translate(" + width + ",0)";
+				})
+				.on("click", function(ev){
+					selected_date = ev.key;
+					selected_values = ev.values;
+					console.dir(ev);
+					console.dir("clicked " + ev.key);
+					sessionData = transformPairs(ev.values);
+					drawData(sessionData);
+					drawHistogram("#histogram", sessionData.extra.histogram);
+				});
+
+				
+				daysGraph.exit().transition(100).attr("transform", function(d){
+				return "translate(-30,0)";
+				})
+				.remove();
+
+
+
+
+				days.append("rect")
+					.attr("x", 0)
+					.attr("y", 1)
+					.attr("width", 16)
+					.attr("height", 16)
+					.attr("class", function(d){ 
+					return "day " + color(d.values.length); 
+					});
+
+				days.append("text")
+					.attr("x", 0)
+					.attr("y", 20)
+					.attr("text-anchor", "start")
+					.text(function(d){ return format(new Date(d.key)); })
+					.attr("transform", "translate(22,20)rotate(90)");
+
+				days.transition(100)
+					.attr("transform", function(d){
+					return "translate(" + x_scale(d.key) + ",0)";
+					});
+			}
+
+
+			//
+			//
+			//
+			//
+			//
+			function initYearButtons() {
+				var yearButtons = d3.select("#yearselect > ul")
+						.selectAll("li")
+						.data(dataMap)
+						.enter().append("li")
+						.append("a")
+						.attr("href", "#")
+						.text(function(d){ 
+						return d.key; 
+						})
+						.datum(function(d,i){
+						return {idx: i}
+						});
+
+				$('#yearselect li:first-child').attr('class', 'active');
+				drawSessions(dataMap[0]);
+
+				$('#yearselect li').click(function(ev){
+					console.log('clicked: ' + ev.target.innerText);
+					console.dir(ev);
+					console.dir(dataMap[ev.target.innerText]);
+					$('#yearselect li').attr('class','');
+					$(ev.target).parent().attr('class','active');
+					selectedYear = ev.target.innerText;
+					drawSessions(dataMap[ev.target.__data__.idx]);
+				});
+			}
+
+
+			//
+			//
+			//
+			//
+			//
+			function transformPairs(data) {
+				res = { data: {}, extra: {} };
+				var timerange = [Number.MAX_VALUE, Number.MIN_VALUE];
+				var range = [Number.MAX_VALUE, Number.MIN_VALUE];
+				var bins = {};
+				var histogram = {};
+				var pair_data = {};
+				var point_details = {};
+
+				var overall_sum = 0;
+				var overall_cnt = 0;
+
+
+				data.forEach(function(d,i){
+				var point_sum = 0;
+				var point_cnt = 0;
+				var linenum = 0;
+				for(var pair in d3.values(possible_pairs)) {
+					var pair_name = possible_pairs[pair];
+					var value = d[pair_name];
+
+					linenum = +d.id;
+
+					timerange[0] = Math.min(timerange[0],Date.parse(d.time));
+					timerange[1] = Math.max(timerange[1],Date.parse(d.time));
+					range[0] = Math.min(range[0], linenum);
+					range[1] = Math.max(range[1], linenum);
+					if(pair_name in d && value != undefined && value != null && value != "") {
+					if(!(linenum in bins)) {
+						bins[linenum] = {};
+					}
+					bins[linenum][pair_name] = +value;
+
+					// point data
+					point_cnt++;
+					point_sum += +value;
+
+
+
+					// pair data
+					if(!(pair_name in pair_data)) {
+						pair_data[pair_name] = {
+						cnt: 0,
+						sum: 0,
+						avg: 0,
+						stddev: 0
+						}
+					}
+
+					pair_data[pair_name].cnt++;
+					pair_data[pair_name].sum+= +value;
+
+					// check if our data is in the pair already
+					if(!(pair_name in res.data)){
+						res.data[pair_name] = {}
+					}
+
+					//res[pair_name][d.time] = d[pair_name];
+					res.data[pair_name][linenum] = d[pair_name];
+
+					// histogram
+					if( !(value in histogram)) {
+						histogram[value] = 0;
+					}
+					histogram[value]++;
+
+					overall_sum += +value;
+					overall_cnt++;
+
+					}
+				}
+
+				var point_avg = point_sum/point_cnt;
+				var point_var = 0;
+				for(var pair in d3.values(possible_pairs)) {
+					var pair_name = possible_pairs[pair];
+					var value = d[pair_name];
+					if(pair_name in d && value != undefined && value != null && value != "") {
+
+					var diff = value - point_avg;
+					point_var += diff * diff;
+					}
+				}
+				var point_sd = Math.sqrt(point_var);
+
+				point_details[linenum] = {
+					sum: point_sum,
+					cnt: point_cnt,
+					avg: point_avg,
+					ssq: point_var,
+					sd: point_sd
+				}
+
+
+				});
+
+				res.extra['timerange'] = timerange;
+				res.extra['range'] = range;
+				res.extra['histogram'] = histogram;
+				res.extra['overall_avg'] = overall_sum / overall_cnt;
+				res.extra['pair_data'] = pair_data;
+				res.extra['point_data'] = point_details;
+
+				console.log("after transform");
+				console.dir(res);
+				console.log('bins');
+				console.dir(bins);
+				console.dir(histogram);
+				console.log('overall_sum: ' + overall_sum);
+				console.log('overall_cnt: ' + overall_cnt);
+				console.log('overall average: ' + (overall_sum / overall_cnt));
+				return res;
+			}
+
+
+			function calcMeanAndWidth(data) {
+
+			}
+
+
+
+
+			function drawData(data) {
+				var m = [30, 30, 30, 30],
+					width = $('#graph').width(),
+					height = $('#graph').height(),
+					labelWidth = 30,
+					yAxisWidth = 10,
+					xAxisHeight = 20,
+					graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
+					graphHeight = height - xAxisHeight - m[0] - m[2];
+
+
+				//console.dir(data);
+				var line = d3.svg.line()
+					.interpolate("linear")
+					.x(function(d) { 
+					return x_scale(+d.time); 
+					})
+					.y(function(d) { 
+					return y_scale(+d.value); 
+					});
+
+
+				//
+				// scales
+				//
+				y_scale = d3.scale.linear()
+					.domain( [100.0, 0] )
+					.range( [0,graphHeight] );
+
+				x_scale = d3.scale.linear()
+					.domain( data.extra['range'] )
+					.range([0,graphWidth]);
+
+				//var session_scales = dataMap.
+				//var 
+
+
+				//
+				// axes
+				//
+
+				var yAxis = d3.svg.axis()
+					.scale(y_scale)
+					.orient("left");
+
+				var xAxis = d3.svg.axis()
+					.scale(x_scale)
+					.orient("bottom");
+
+				//
+				// graph
+				//
+
+				$('#graph').empty();
+
+				var svg = d3.select("#graph")
+					.append("svg")
+					.attr("width", width)
+					.attr("height", height);
+
+
+				// draw axes
+				svg.append("g")
+					.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
+					.attr("class", "axis")
+					.call(xAxis);
+
+				svg.append("g")
+					.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
+					.attr("class", "axis")
+					.call(yAxis);
+
+
+				var groups = svg.selectAll("g.data")
+					.data($.map(data.data,function(v,k){
+					return {value: v, time: k}; 
+					}))
+					.enter().append("g")
+					.attr("transform", function(d){
+					return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
+					});
+
+
+				groups.selectAll(".line")
+					.data(function(d){
+					//console.dir(d);
+					return [$.map(d.value,function(v,k){
+						return {value: v, time: k}; 
+					})];
+					})
+					.enter().append("path")
+					.attr("class", "line")
+					.attr("d", line);
+
+			}
+
+
+
+
+			function drawHistogram(elem, data) {
+				var m = [10,10,20,40],
+				el_w = $(elem).width(),
+				el_h = $(elem).height(),
+				w = el_w-m[1]-m[3],
+				h = el_h - m[0] -m[2];
+
+
+				var sortedData = d3.entries(data).sort(function(a,b){
+				return +a.key - +b.key;
+				});
+
+
+				//
+				// scales
+				//
+				var yscale = d3.scale.linear()
+					.domain( [0, d3.max(d3.values(data))] )
+					.range( [h,0] );
+
+				var xscale = d3.scale.linear()
+					.domain( [0,100.0] )
+					.range([0,w]);
+
+
+				// line generator
+				var line = d3.svg.line()
+					.interpolate("linear")
+					.x(function(d) { 
+					return xscale(+d.key); 
+					})
+					.y(function(d) { 
+					return yscale(+d.value); 
+					});
+
+				//
+				// axes
+				//
+
+				var yAxis = d3.svg.axis()
+					.scale(yscale)
+					.ticks(2)
+					.orient("left");
+
+				var xAxis = d3.svg.axis()
+					.scale(xscale)
+					.ticks(3)
+					.orient("bottom");
+
+				//
+				// graph
+				//
+				$(elem).empty();
+				
+				var svg = d3.select(elem)
+					.append("svg")
+					.attr("width", el_w)
+					.attr("height", el_h);
+
+
+				// draw axes
+				svg.append("g")
+					.attr("transform", "translate(" + m[3] + "," + (m[0]+ h) + ")")
+					.attr("class", "axis")
+					.call(xAxis);
+
+				svg.append("g")
+					.attr("transform", "translate(" + m[3] + "," + m[0] + ")")
+					.attr("class", "axis")
+					.call(yAxis);
+
+				svg.append("g").attr("transform", "translate(" + m[3] + "," + m[0] + ")")
+					.selectAll("path.line")
+					.data([sortedData])
+					.enter().append("path")
+					.attr("class", "line")
+					.attr("d", line);
+			}
+
+
+
+			/*
+			 * 1. First find all unique line ids in the data
+			 * 2. Aggregate all agreement values in that dataset
+			 * 3. Caclulate Mean, stddev
+			 * 4. Calculate appropriate UB/LB confidence intervals
+			 *
+			 *
+			 *
+			 *
+			 */
+			function processSessionData(data) {
+				bins = {}
+
+
+
+			}
+
+
+
+			//
+			// ready
+			//
+			$(document).ready(function() {  
+				$('#graph').empty();
+				format = d3.time.format("%Y-%m-%d %H:%M:%S");
+				dayFormat = d3.time.format("%Y-%m-%d");
+
+				var spinner = $('body').spin("small");
+
+				d3.csv("data/20line.csv", function(csv) {
+					console.log('got csv!');
+					console.dir(csv);
+					data = csv;
+
+					dataMap = d3.nest()
+						.key(function(d){
+						return ((new Date(format.parse(d.time))).getYear() + 1900);
+						})
+						.key(function(d){ 
+						fulldate = new Date(format.parse(d.time));
+						date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
+						return dayFormat(date); 
+						})
+						.entries(data);
+
+					console.log("dataMap");
+					console.dir(dataMap);
+
+					//dataMap = dataMap.map();
+
+					console.dir(d3.keys(dataMap));
+
+					// grab our possible pairs
+					possible_pairs = Object.keys(csv[0]);
+					possible_pairs = possible_pairs.filter(function(d){
+						return (d.indexOf('-') != -1);
+					});
+					console.dir(possible_pairs);
+
+					// interaction initi
+					initYearButtons();
+					//drawSessions(dataMap);
+
+					spinner.spin(false);
+
+				});
+
+			});
+		</script>
+
+	</head>
+	<body>
+		
+		<div class="container-fluid">
+			<div class="row-fluid">
+				<legend>Inter-rater Reliability</legend>
+			</div>
+
+			<div class="row-fluid">
+				<div id="yearselect">
+					<ul class="nav nav-pills"></ul>
+				</div>
+				<div id="sessions" class="span10"></div>              
+			</div>
+
+			<div id="main-view" class="row-fluid">
+				<div id="graph" class=""></div>
+				<div id="sidepanel" class="">
+					<h4>Frequencies</h4>
+					<div id="histogram"></div>
+					<h4>Coders</h4>
+					<div id="pairnames"></div>
+				</div>
+			</div>
+			<div id="sub-view" class="row-fluid">
+
+			</div>
+		</div>        
+	</body>
 
 </html>

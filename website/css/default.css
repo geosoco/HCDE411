@@ -58,6 +58,11 @@ g.axis {
   shape-rendering: crispEdges;
 }
 
+.day:hover {
+  stroke: #f00;
+  stroke-width: 2px;
+}
+
 path.line {
   fill: none;
   stroke: #666;
@@ -74,3 +79,50 @@ path.line:hover {
   -o-transition: stroke 0.1s, stroke-width 0.1s;
 }
 
+#sessions text {
+  font-size: 10px;
+}
+
+
+#main-view {
+  height: 480px;
+}
+
+
+#graph, #histogram {
+  display: block;
+}
+
+#graph {
+  width: 80%;
+  height: 100%;
+  float: left;
+}
+
+#histogram {
+  width: 90%;
+  height: 80px;
+  margin-left:auto;
+  margin-right:auto;
+  background: #fff;
+  box-shadow: 0px 0px 5px 1px #aaa;
+}
+
+#histogram .axis text {
+  font-size: 7px;
+}
+
+/* override bootstraps nav margin */
+ul.nav {
+  margin-bottom: 5px;
+}
+
+
+#sidepanel {
+  background: #eee;
+  width: 19%;
+  height: 100%;
+  float: left;
+  padding: 5px;
+  border-radius: 5px;
+}

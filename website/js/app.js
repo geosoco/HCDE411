@@ -100,48 +100,7 @@ window.IRAApp = Backbone.Router.extend({
 	initialize: function(options) {
 		console.log('router init');
 
-		var spinner = $('body').spin("small");
-
-		d3.csv("data/10line.csv", function(csv) {
-            console.log('got csv!');
-            console.dir(csv);
-            data = csv;
-
-            dataMap = d3.nest()
-              .key(function(d){
-                return ((new Date(format.parse(d.time))).getYear() + 1900);
-              })
-              .key(function(d){ 
-                fulldate = new Date(format.parse(d.time));
-                date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
-                return dayFormat(date); 
-              })
-              .entries(data);
-
-            console.log("dataMap");
-            console.dir(dataMap);
-
-            yearlist = new YearList(dataMap);
-            console.dir(yearlist);
-
-
-            //dataMap = dataMap.map();
-
-            console.dir(d3.keys(dataMap));
-
-            // grab our possible pairs
-            possible_pairs = Object.keys(csv[0]);
-            possible_pairs = possible_pairs.filter(function(d){
-              return (d.indexOf('-') != -1);
-            });
-            console.dir(possible_pairs);
-
-            this.yearSelect = new YearSelect({el: "#yearselect > ul", collection: yearlist});
-
-            spinner.spin(false);
-
-        });
-
+		
 	},
 
 	main: function() {
