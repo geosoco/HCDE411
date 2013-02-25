@@ -279,7 +279,7 @@ class AgreementCalculator:
 
 				if (agreed_codes + disagreed_codes) > 0:
 					# calculate the total agreement
-					pct_agreement = float(agreed_codes) / float(agreed_codes + disagreed_codes)
+					pct_agreement = float(agreed_codes) * 100.0 / float(agreed_codes + disagreed_codes)
 
 					# add to our dictionary
 					pairs[pair_id] = pct_agreement
