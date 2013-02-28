@@ -27,16 +27,33 @@ import argparse
 
 DBHOST = 'localhost'
 DBUSER = 'root'
-DBPASS = 'blahhalb'
+DBPASS = None
 DBNAME = 'textprizm'
 
-
+#
+# XXX: TODO -- modify to ignore bert lines entirely?
+# 
 SELECT_INSTANCES_QUERY = """select dp.id as message_id, dp.participant_id as participant, dp.time as message_time, ci.user_id as user_id, ci.code_id as code_id, ci.added as date_added from data_points dp
 inner join coding_instances ci on ci.message_id = dp.id
 inner join coding_codes cc on cc.id = ci.code_id
 where cc.schema_id = 2 and cc.id not in (117,118,119,120,121,122,123,124,126)
 group by dp.id, ci.user_id
 order by dp.time desc"""
+
+SELECT_CODE_AGREEMENT_QUERY = """select a.day, a.id, avg(a.num_coders) avg_num_coders, sum(a.num_codes) as num_codes, count(a.id) as used_on_lines,  avg(a.pct) as pct from 
+	(select p.day, p.id, count(ci.user_id) as num_coders, p.num_codes, p.num_codes*100/count(ci.user_id) as pct from textprizm.coding_instances ci
+	inner join 
+		(select date(ci.added) as day, dp.id as `id`, count(distinct ci.id) `num_codes` from textprizm.data_points dp
+		inner join textprizm.coding_instances ci on ci.message_id = dp.id
+		where ci.code_id = %s
+		group by day, dp.id) p 
+		on p.id = ci.message_id
+	where date(ci.added) <= p.day
+	group by p.day, p.id) a
+where a.num_coders > 1
+group by a.day
+order by a.day, a.id
+"""
 
 
 #
@@ -56,6 +73,7 @@ def pretty(obj):
 	# add args
 parser = argparse.ArgumentParser()
 parser.add_argument("outfile", type=str, help="name of the csv outfile")
+parser.add_argument("user_agreement_file", type=str, help="name of user csv file")
 parser.add_argument("--maxsegtime", type=int, help="maximum segment time size", default=5)
 parser.add_argument("--maxlines", type=int, help="maximum number of lines in a segment", default=5)
 parser.add_argument("--dbhost", help="Database host name", default=DBHOST)
@@ -309,6 +327,171 @@ class AgreementCalculator:
 		return results
 
 
+class UserAgreementCalculator:
+	'''Class to caclulate the user agreement'''
+	def __init__(self, segments):
+		self.segments = segments
+
+
+	def BuildSegmentSets(self, segment):
+		users = {}
+
+		# step through datapoints
+		for dp in segment.datapoints:
+			# from each datapoint, grab the userid and codes and join them
+			for id, codes in dp.users.items():
+				if id not in users:
+					users[id] = set()
+				users[id] |= set(codes.codes.keys())
+
+		# return the results
+		return users
+
+	def CalculateSegmentAgreement(self, users):
+		user_agreements = {}
+		numusers = len(users)
+		for i in range(0,numusers):
+			for j in range(i+1,numusers):
+				user_ids = [users.keys()[i], users.keys()[j]]
+				user1 = min(user_ids)
+				user2 = max(user_ids)
+
+				# agreed codes is the intersection of the two
+				agreed_codes = len(set(users[user1] & users[user2]))
+
+				# disagreed codes are the symmetric difference
+				disagreed_codes = len(set(users[user1] ^ users[user2]))
+
+				#print "agreed: %d | disagreed: %d"%(agreed_codes,disagreed_codes)
+
+				if (agreed_codes + disagreed_codes) > 0:
+					# calculate the total agreement
+					pct_agreement = float(agreed_codes) * 100.0 / float(agreed_codes + disagreed_codes)
+
+					# add to our dictionary
+					if user1 not in user_agreements:
+						user_agreements[user1] = [pct_agreement]
+					else:
+						user_agreements[user1].append(pct_agreement)
+
+					if user2 not in user_agreements:
+						user_agreements[user2] = [pct_agreement]
+					else:
+						user_agreements[user2].append(pct_agreement)
+
+		user_agreement = {}
+		for k,v in user_agreements.items():
+			user_agreement[k] = float(sum(v))/len(v) if len(v) > 0 else None
+
+		return user_agreement
+
+
+
+	def CalcAgreementBySegments(self):
+		results = []
+		for s in self.segments:
+			users = self.BuildSegmentSets(s)
+			pairs = self.CalculateSegmentAgreement(users)
+
+			#print users
+			#print users.keys()
+			#print pairs
+			#print pairs.values()
+			user_ids = ' '.join(str(v) for v in users.keys())
+			pct_agreements = ', '.join(str(v) for v in pairs.values())
+
+			row = {'id': s.datapoints[0].id, 'time': s.datapoints[0].time}
+			#print row
+			#print pairs
+			row.update(pairs)
+			results.append(row)
+			#print "%s:%s"%(user_ids, pct_agreements)
+		return results
+
+
+
+
+class CodeAgreementCalculator:
+	'''Class to caclulate the code agreement'''
+	def __init__(self, segments, code):
+		self.segments = segments
+
+
+	def BuildSegmentSets(self, segment):
+		users = {}
+
+		# step through datapoints
+		for dp in segment.datapoints:
+			# from each datapoint, grab the userid and codes and join them
+			for id, codes in dp.users.items():
+				if id not in users:
+					users[id] = set()
+				users[id] |= set(codes.codes.keys())
+
+		# return the results
+		return users
+
+
+	def CalculateSegmentAgreement(self, users):
+		user_agreements = {}
+		numusers = len(users)
+		for i in range(0,numusers):
+			for j in range(i+1,numusers):
+				user_ids = [users.keys()[i], users.keys()[j]]
+				user1 = min(user_ids)
+				user2 = max(user_ids)
+
+				# agreed codes is the intersection of the two
+				agreed_codes = len(set(users[user1] & users[user2]))
+
+				# disagreed codes are the symmetric difference
+				disagreed_codes = len(set(users[user1] ^ users[user2]))
+
+				#print "agreed: %d | disagreed: %d"%(agreed_codes,disagreed_codes)
+
+				if (agreed_codes + disagreed_codes) > 0:
+					# calculate the total agreement
+					pct_agreement = float(agreed_codes) * 100.0 / float(agreed_codes + disagreed_codes)
+
+					# add to our dictionary
+					if user1 not in user_agreements:
+						user_agreements[user1] = [pct_agreement]
+					else:
+						user_agreements[user1].append(pct_agreement)
+
+					if user2 not in user_agreements:
+						user_agreements[user2] = [pct_agreement]
+					else:
+						user_agreements[user2].append(pct_agreement)
+
+		user_agreement = {}
+		for k,v in user_agreements.items():
+			user_agreement[k] = float(sum(v))/len(v) if len(v) > 0 else None
+
+		return user_agreement
+
+
+
+	def CalcAgreementBySegments(self):
+		results = []
+		for s in self.segments:
+			users = self.BuildSegmentSets(s)
+			pairs = self.CalculateSegmentAgreement(users)
+
+			#print users
+			#print users.keys()
+			#print pairs
+			#print pairs.values()
+			user_ids = ' '.join(str(v) for v in users.keys())
+			pct_agreements = ', '.join(str(v) for v in pairs.values())
+
+			row = {'id': s.datapoints[0].id, 'time': s.datapoints[0].time}
+			#print row
+			#print pairs
+			row.update(pairs)
+			results.append(row)
+			#print "%s:%s"%(user_ids, pct_agreements)
+		return results
 
 
 
@@ -355,11 +538,22 @@ while dbrow is not None: # and cnt < 5:
     dbrow = cursor.fetchone()
     cnt+=1
 
-    #if cnt%100:
-    #	print "    %d"%cnt
+
+# grab codes
+code_values = []
+codes = [113, 77, 81, 84, 80, 83, 73, 96, 94, 74, 89, 79, 99]
+for code in codes:
+	cursor.execute(SELECT_CODE_AGREEMENT_QUERY, (code))
+	dbrow = cursor.fetchone()
+	while dbrow is not None:
+		code_values.append([dbrow[0].isoformat(), dbrow[1], dbrow[2], dbrow[3], dbrow[4], dbrow[5]])
+		dbrow = cursor.fetchone()
 
 cursor.close()
 db.close() 
+
+print pretty({"values": code_values})
+quit()
 
 print "Segmenting... (maxtime=%d, maxlines=%d)"%(args.maxlines, args.maxlines)
 segmenter = Segmenter(args.maxlines)
@@ -389,6 +583,7 @@ print "max segment length: %d msgs"%maxseg
 agreementcalc = AgreementCalculator(segmenter.segments)
 results = agreementcalc.CalcAgreementBySegments()
 
+# write out basic pair agreement
 fieldnames = ['id','time']
 for i in range(1,22):
 	for j in range(i+1, 22):
@@ -399,6 +594,21 @@ csvwriter = csv.DictWriter(data_file, delimiter=",", fieldnames=fieldnames)
 csvwriter.writerow(dict((fn,fn) for fn in fieldnames))
 for row in results:
 	csvwriter.writerow(row)
+
+
+# write out basic user agrement
+useragreementcalc = UserAgreementCalculator(segmenter.segments)
+results = useragreementcalc.CalcAgreementBySegments()
+fieldnames = ['id','time']
+for k in range(1,22):
+	fieldnames.append(k)
+
+data_file = open(args.user_agreement_file, "wt")
+csvwriter = csv.DictWriter(data_file, delimiter=",", fieldnames=fieldnames)
+csvwriter.writerow(dict((fn,fn) for fn in fieldnames))
+for row in results:
+	csvwriter.writerow(row)
+
 
 
 
