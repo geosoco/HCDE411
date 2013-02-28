@@ -35,7 +35,7 @@
 
 				// sort our data first
 				data.values.sort(function(a,b){
-				return Date.parse(a.key) - Date.parse(b.key);
+					return Date.parse(a.key) - Date.parse(b.key);
 				});
 
 
@@ -82,6 +82,7 @@
 					sessionData = transformPairs(ev.values);
 					drawData(sessionData);
 					drawHistogram("#histogram", sessionData.extra.histogram);
+					drawPairNames("#pairnames", sessionData);
 				});
 
 				
@@ -455,6 +456,16 @@
 					.attr("d", line);
 			}
 
+			function drawPairNames(elem, data) {
+				var list = d3.select(elem);
+
+				list.selectAll("li")
+					.data(d3.keys(data.data))
+					.enter()
+					.append("li")
+					.text(String);
+			}
+
 
 
 			/*
@@ -522,6 +533,14 @@
 
 					spinner.spin(false);
 
+					var selectedMode = new SelectedMode();
+					var selectedSession = new SelectedSession();
+
+					var router = new IRAApp();
+					var yearSelect = new YearSelect({el: "#yearselect"});
+
+
+
 				});
 
 			});
@@ -529,7 +548,6 @@
 
 	</head>
 	<body>
-		
 		<div class="container-fluid">
 			<div class="row-fluid">
 				<legend>Inter-rater Reliability</legend>
@@ -542,13 +560,23 @@
 				<div id="sessions" class="span10"></div>              
 			</div>
 
+			<div>
+				<div class="btn-group" data-toggle="buttons-radio">
+  					<button type="button" class="btn btn-primary active">All</button>
+  					<button type="button" class="btn btn-primary">Users</button>
+  					<button type="button" class="btn btn-primary">Codes</button>
+				</div>
+			</div>
+
 			<div id="main-view" class="row-fluid">
 				<div id="graph" class=""></div>
-				<div id="sidepanel" class="">
+				<div id="sidepanel" class="scrolllist">
 					<h4>Frequencies</h4>
 					<div id="histogram"></div>
 					<h4>Coders</h4>
-					<div id="pairnames"></div>
+					<div class="scrolllist">
+						<ul id="pairnames"></ul>
+					</div>
 				</div>
 			</div>
 			<div id="sub-view" class="row-fluid">

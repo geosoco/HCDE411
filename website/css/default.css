@@ -126,3 +126,12 @@ ul.nav {
   padding: 5px;
   border-radius: 5px;
 }
+
+
+.scrolllist {
+  overflow: scroll;
+}
+
+#pairnames li {
+  list-style-type: none;
+}

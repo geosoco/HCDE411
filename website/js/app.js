@@ -6,9 +6,26 @@
  *
  *
  ****************************************************************/
-window.SessionDate = Backbone.Model.extend({
 
+window.SelectedMode = Backbone.Model.extend({
+	defaults: {
+		mode: 0
+	}
+})
+
+window.SelectedSession = Backbone.Model.extend({
+	defaults: {
+		year: 2004,
+		date: null
+	},
+
+	initialize: function() {
+
+	}
 });
+
+
+
 
 window.SessionDates = Backbone.Collection.extend({
 	model: SessionDate
@@ -55,16 +72,17 @@ window.YearSelect = Backbone.View.extend({
 
 	initialize: function() {
 		this.render();
-		this.selected = this.collection.at(0).attributes.key;
+		//this.selected = this.collection.at(0).attributes.key;
 		evSessionYear.trigger("change", this.selected);
 	},
 
 	render: function() {
+		/*
 		this.$el.empty();
 
 		var list = _.template('<% _.each(years, function(year) { %> <li><a><%= year.key %></a></li><% }); %>', {years: this.collection.toJSON()} );
 		this.$el.html(list);
-
+		*/
 	},
 
 	selchanged: function(ev) {
@@ -78,7 +96,28 @@ window.YearSelect = Backbone.View.extend({
         // trigger event
 		evSessionYear.trigger("change", this.selected);
 	}
-})
+});
+
+
+
+window.SessionDatesView = Backbone.View.extend({
+	events: {
+		"click g.session"
+	},
+
+	initialize: function() {
+
+	},
+
+	render: function() {
+
+	},
+
+
+	selchanged: function(ev) {
+
+	}
+});
 
 
 
@@ -90,11 +129,12 @@ window.YearSelect = Backbone.View.extend({
  *
  ****************************************************************/
 window.IRAApp = Backbone.Router.extend({
+	dateFormat: d3.time.format("%Y-%m-%d"),
 	
 	routes: {
-		"": 					"main",
-		"user/:id": 			"user", 
-		"code/:id":				"code"
+		":date": 				"main",
+		"users/:date": 			"users", 
+		"codes/:date":			"codes"
 	},
 
 	initialize: function(options) {
@@ -103,20 +143,17 @@ window.IRAApp = Backbone.Router.extend({
 		
 	},
 
-	main: function() {
-    	this.search = new SearchView({
-        	el: '#main',
-        	model: query,
-      	});
+	main: function(date) {
+    	
     	this.results = null;
 	},
 
-	user: function(id) {
-		console.log('user:' + id);
+	user: function(date) {
+		console.log('user:' + date);
 	},
 
-	code: function(id) {
-		console.log('code: ' + id);
+	code: function(date) {
+		console.log('code: ' + date);
 	}
 
 
