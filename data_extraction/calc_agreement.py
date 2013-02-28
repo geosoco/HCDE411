@@ -40,20 +40,7 @@ where cc.schema_id = 2 and cc.id not in (117,118,119,120,121,122,123,124,126)
 group by dp.id, ci.user_id
 order by dp.time desc"""
 
-SELECT_CODE_AGREEMENT_QUERY = """select a.day, a.id, avg(a.num_coders) avg_num_coders, sum(a.num_codes) as num_codes, count(a.id) as used_on_lines,  avg(a.pct) as pct from 
-	(select p.day, p.id, count(ci.user_id) as num_coders, p.num_codes, p.num_codes*100/count(ci.user_id) as pct from textprizm.coding_instances ci
-	inner join 
-		(select date(ci.added) as day, dp.id as `id`, count(distinct ci.id) `num_codes` from textprizm.data_points dp
-		inner join textprizm.coding_instances ci on ci.message_id = dp.id
-		where ci.code_id = %s
-		group by day, dp.id) p 
-		on p.id = ci.message_id
-	where date(ci.added) <= p.day
-	group by p.day, p.id) a
-where a.num_coders > 1
-group by a.day
-order by a.day, a.id
-"""
+
 
 
 #
@@ -538,22 +525,6 @@ while dbrow is not None: # and cnt < 5:
     dbrow = cursor.fetchone()
     cnt+=1
 
-
-# grab codes
-code_values = []
-codes = [113, 77, 81, 84, 80, 83, 73, 96, 94, 74, 89, 79, 99]
-for code in codes:
-	cursor.execute(SELECT_CODE_AGREEMENT_QUERY, (code))
-	dbrow = cursor.fetchone()
-	while dbrow is not None:
-		code_values.append([dbrow[0].isoformat(), dbrow[1], dbrow[2], dbrow[3], dbrow[4], dbrow[5]])
-		dbrow = cursor.fetchone()
-
-cursor.close()
-db.close() 
-
-print pretty({"values": code_values})
-quit()
 
 print "Segmenting... (maxtime=%d, maxlines=%d)"%(args.maxlines, args.maxlines)
 segmenter = Segmenter(args.maxlines)
