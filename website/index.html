@@ -29,91 +29,6 @@
 			//
 			//
 			function drawSessions(data) {
-				var width = 600,
-					height = 70,
-					format = d3.time.format("%b %d");
-
-				// sort our data first
-				data.values.sort(function(a,b){
-					return Date.parse(a.key) - Date.parse(b.key);
-				});
-
-
-				// build our scale
-				var x_scale = d3.scale.ordinal()
-						.domain(data.values.map(function(d2) { return d2.key; }))
-						.rangeRoundBands([0,width],0);
-
-				var color = d3.scale.quantize()
-						.domain([0, 32])
-						.range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
-
-				sessionSVG = sessionSVG || d3.select("#sessions")
-							.append("svg")
-							.attr("width", width)
-							.attr("height", height)
-							.append("g")
-							.attr("class", "Greys");
-
-
-
-
-				daysGraph = sessionSVG.selectAll("g.session")
-				.data(data.values, function(d,i){
-					return d.key;
-				});
-
-				daysGraph.transition()
-				.attr("transform", function(d){
-					return "translate(" + x_scale(d.key) + ",0)";
-				});
-
-				var days = daysGraph.enter()
-				.append("g")
-				.attr("class", "session")
-				.attr("transform", function(d){
-					return "translate(" + width + ",0)";
-				})
-				.on("click", function(ev){
-					selected_date = ev.key;
-					selected_values = ev.values;
-					console.dir(ev);
-					console.dir("clicked " + ev.key);
-					sessionData = transformPairs(ev.values);
-					drawData(sessionData);
-					drawHistogram("#histogram", sessionData.extra.histogram);
-					drawPairNames("#pairnames", sessionData);
-				});
-
-				
-				daysGraph.exit().transition(100).attr("transform", function(d){
-				return "translate(-30,0)";
-				})
-				.remove();
-
-
-
-
-				days.append("rect")
-					.attr("x", 0)
-					.attr("y", 1)
-					.attr("width", 16)
-					.attr("height", 16)
-					.attr("class", function(d){ 
-					return "day " + color(d.values.length); 
-					});
-
-				days.append("text")
-					.attr("x", 0)
-					.attr("y", 20)
-					.attr("text-anchor", "start")
-					.text(function(d){ return format(new Date(d.key)); })
-					.attr("transform", "translate(22,20)rotate(90)");
-
-				days.transition(100)
-					.attr("transform", function(d){
-					return "translate(" + x_scale(d.key) + ",0)";
-					});
 			}
 
 
@@ -123,31 +38,7 @@
 			//
 			//
 			function initYearButtons() {
-				var yearButtons = d3.select("#yearselect > ul")
-						.selectAll("li")
-						.data(dataMap)
-						.enter().append("li")
-						.append("a")
-						.attr("href", "#")
-						.text(function(d){ 
-						return d.key; 
-						})
-						.datum(function(d,i){
-						return {idx: i}
-						});
 
-				$('#yearselect li:first-child').attr('class', 'active');
-				drawSessions(dataMap[0]);
-
-				$('#yearselect li').click(function(ev){
-					console.log('clicked: ' + ev.target.innerText);
-					console.dir(ev);
-					console.dir(dataMap[ev.target.innerText]);
-					$('#yearselect li').attr('class','');
-					$(ev.target).parent().attr('class','active');
-					selectedYear = ev.target.innerText;
-					drawSessions(dataMap[ev.target.__data__.idx]);
-				});
 			}
 
 
@@ -533,14 +424,21 @@
 
 					spinner.spin(false);
 
+					// models
 					var selectedMode = new SelectedMode();
 					var selectedSession = new SelectedSession();
 
+					// router
 					var router = new IRAApp();
-					var yearSelect = new YearSelect({el: "#yearselect"});
 
+					// views 
+					var yearSelectView = new YearSelect({el: "#yearselect", model: selectedSession });
+					var sessionDatesView = new SessionDatesView({el: '#sessions', model: selectedSession });
+					var mainView = new new MainView({el: '#main-view', model: selectedSesssion });
 
+					selectedSession.set({ year: 2004, yearIdx: 0});
 
+					Backbone.history.start();
 				});
 
 			});
@@ -553,19 +451,19 @@
 				<legend>Inter-rater Reliability</legend>
 			</div>
 
-			<div class="row-fluid">
-				<div id="yearselect">
-					<ul class="nav nav-pills"></ul>
-				</div>
-				<div id="sessions" class="span10"></div>              
-			</div>
-
 			<div>
 				<div class="btn-group" data-toggle="buttons-radio">
   					<button type="button" class="btn btn-primary active">All</button>
   					<button type="button" class="btn btn-primary">Users</button>
   					<button type="button" class="btn btn-primary">Codes</button>
 				</div>
+			</div>
+
+			<div class="row-fluid">
+				<div id="yearselect">
+					<ul class="nav nav-pills"></ul>
+				</div>
+				<div id="sessions" class="span10"></div>              
 			</div>
 
 			<div id="main-view" class="row-fluid">
