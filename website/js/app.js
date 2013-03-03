@@ -69,6 +69,52 @@ window.YearList = Backbone.Collection.extend({
  ****************************************************************/
 
 
+window.ModeSelect = Backbone.View.extend({
+	events: {
+		"click button": "selchanged"
+	},
+
+	initialize: function() {
+		this.listenTo(this.model, "change:mode", this.modechanged);
+	},
+
+	render: function() {
+		$('button.active', this.$el).removeClass('active');
+		$('button[data-mode="' + this.model.get('mode') + '"]', this.$el).addClass('active');
+	}, 
+
+	selchanged: function(ev) {
+		console.log('ModeSelect changed');
+		//console.dir(ev);
+		//console.dir($(ev.srcElement).attr('data-mode'));
+
+		var newMode = $(ev.srcElement).attr('data-mode');
+		console.dir(newMode);
+		//this.model.set({'mode': newMode });
+
+		this.render();
+
+		var modeName = 'main';
+		switch(+newMode) {
+			case 1: modeName = 'users'; break;
+			case 2: modeName = 'codes'; break;
+
+		}
+		router.navigate('/' + modeName );
+	},
+
+	modechanged: function(ev) {
+		console.log('ModeView: mode changed');
+
+		var mode = this.model.get('mode');
+		console.dir(mode);
+
+		this.render();
+	}
+
+
+});
+
 
 window.YearSelect = Backbone.View.extend({
 	events: {
@@ -109,7 +155,8 @@ window.YearSelect = Backbone.View.extend({
 	yearChanged: function() {
 		console.log('year changed');
 		var selected = this.model.get('yearIdx');
-		$('li:nth-child(' + (selected+1) + ')', this.$el).attr('class', 'active');
+		$('li',this.$el).removeClass('active');
+		$('li:nth-child(' + (selected+1) + ')', this.$el).addClass('active');
 	},
 
 	selchanged: function(ev) {
@@ -140,6 +187,7 @@ window.SessionDatesView = Backbone.View.extend({
 
 	initialize: function() {
 		this.listenTo(this.model, "change:yearIdx", this.yearChanged);
+		this.listenTo(this.model, "change:date", this.sessionChanged);
 	},
 
 	render: function() {
@@ -203,6 +251,9 @@ window.SessionDatesView = Backbone.View.extend({
 					.attr("y", 1)
 					.attr("width", 16)
 					.attr("height", 16)
+					.attr("data-date", function(d,i){
+						return d.key;
+					})
 					.attr("class", function(d){ 
 						return "day " + color(d.values.length); 
 					});
@@ -229,6 +280,20 @@ window.SessionDatesView = Backbone.View.extend({
 		this.render();
 	},
 
+	sessionChanged: function(ev) {
+		console.log('session Changed');
+		console.dir(ev);
+
+		var date = this.model.get("date");
+		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
+		var selected_values = data.values;
+
+		sessionData = transformPairs(selected_values);
+		drawData(sessionData);
+		drawHistogram("#histogram", sessionData.extra.histogram);
+		drawPairNames("#pairnames", sessionData);
+	},
+
 
 	selchanged: function(ev) {
 		//console.log('clicky2');
@@ -247,10 +312,63 @@ window.SessionDatesView = Backbone.View.extend({
 		drawData(sessionData);
 		drawHistogram("#histogram", sessionData.extra.histogram);
 		drawPairNames("#pairnames", sessionData);
+	},
 
+
+});
+
+
+//
+//
+// 
+//
+//
+window.MainView = Backbone.View.extend({
+	events: {
+
+	},
+
+	initialize: function() {
+		this.listenTo(this.model, "change:mode", this.modeChanged);
+	}, 
+
+	render: function() {
+
+	},
+
+	modeChanged: function() {
 
 	}
 });
+
+window.AlllView = Backbone.View.extend({
+	events: {
+
+	},
+
+	initialize: function() {
+
+	}, 
+
+	render: function() {
+
+	}
+});
+
+window.AllSidePanel = Backbone.View.extend({
+	events: {
+
+	},
+
+	initialize: function() {
+
+	},
+
+	render: function() {
+
+	}
+})
+
 
 
 
@@ -265,28 +383,69 @@ window.IRAApp = Backbone.Router.extend({
 	dateFormat: d3.time.format("%Y-%m-%d"),
 	
 	routes: {
-		":date": 				"main",
-		"users/:date": 			"users", 
-		"codes/:date":			"codes"
+		"": 						"main",
+		"main/:date": 				"main",
+		"users(/:date)": 			"users", 
+		"codes(/:date)":			"codes"
 	},
 
 	initialize: function(options) {
 		console.log('router init');
 
-		
+		// models
+		this.selectedMode = new SelectedMode();
+		this.selectedSession = new SelectedSession();
+
+		// views 
+		this.modeSelectView = new ModeSelect({el: "#mode-select", model: this.selectedMode });
+		this.yearSelectView = new YearSelect({el: "#yearselect", model: this.selectedSession });
+		this.sessionDatesView = new SessionDatesView({el: '#sessions', model: this.selectedSession });
+		this.mainView = new MainView({el: '#main-view', model: this.selectedMode });
+
+		this.selectedSession.set({ year: 2004, yearIdx: 0});
+
+		Backbone.history.start();
 	},
 
 	main: function(date) {
-    	
+    	console.log('main:' + date);
+
+    	this.selectedMode.set({mode: 0});
+    	this.setDate(date);
+
+
     	this.results = null;
 	},
 
-	user: function(date) {
-		console.log('user:' + date);
+	users: function(date) {
+		this.selectedMode.set({mode: 1});
+
+		console.log('users:' + date);
 	},
 
-	code: function(date) {
-		console.log('code: ' + date);
+	codes: function(date) {
+		this.selectedMode.set({mode: 2});
+
+		console.log('codes: ' + date);
+		this.setDate(date);
+	},
+
+
+	setDate: function(date) {
+		if(typeof date == "undefined") {
+			return;
+		}
+
+		var parsedDate = this.dateFormat.parse(date);
+		if(parsedDate != null) {
+			console.dir(parsedDate);
+			var yearnum = parsedDate.getFullYear();
+			this.selectedSession.set({year: yearnum, yearIdx: (yearnum-2004), date: date});
+		}
+		else {
+			console.log("Invalid date in URL: " + date);
+		}
+		
 	}
 
 

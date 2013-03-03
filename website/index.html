@@ -424,21 +424,10 @@
 
 					spinner.spin(false);
 
-					// models
-					var selectedMode = new SelectedMode();
-					var selectedSession = new SelectedSession();
 
 					// router
-					var router = new IRAApp();
+					router = new IRAApp();
 
-					// views 
-					var yearSelectView = new YearSelect({el: "#yearselect", model: selectedSession });
-					var sessionDatesView = new SessionDatesView({el: '#sessions', model: selectedSession });
-					var mainView = new new MainView({el: '#main-view', model: selectedSesssion });
-
-					selectedSession.set({ year: 2004, yearIdx: 0});
-
-					Backbone.history.start();
 				});
 
 			});
@@ -452,10 +441,10 @@
 			</div>
 
 			<div>
-				<div class="btn-group" data-toggle="buttons-radio">
-  					<button type="button" class="btn btn-primary active">All</button>
-  					<button type="button" class="btn btn-primary">Users</button>
-  					<button type="button" class="btn btn-primary">Codes</button>
+				<div class="btn-group" data-toggle="buttons-radio" id="mode-select">
+  					<button type="button" class="btn btn-primary active" data-mode="0">All</button>
+  					<button type="button" class="btn btn-primary" data-mode="1">Users</button>
+  					<button type="button" class="btn btn-primary" data-mode="2">Codes</button>
 				</div>
 			</div>
 
