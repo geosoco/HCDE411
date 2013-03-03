@@ -30,13 +30,14 @@ DBUSER = 'root'
 DBPASS = None
 DBNAME = 'textprizm'
 
+
 #
 # XXX: TODO -- modify to ignore bert lines entirely?
 # 
 SELECT_INSTANCES_QUERY = """select dp.id as message_id, dp.participant_id as participant, dp.time as message_time, ci.user_id as user_id, ci.code_id as code_id, ci.added as date_added from data_points dp
 inner join coding_instances ci on ci.message_id = dp.id
 inner join coding_codes cc on cc.id = ci.code_id
-where cc.schema_id = 2 and cc.id not in (117,118,119,120,121,122,123,124,126)
+where cc.schema_id = 2 and cc.id not in (117,118,119,120,121,122,123,124,126) and dp.participant_id not in (1,2)
 group by dp.id, ci.user_id
 order by dp.time desc"""
 
@@ -59,13 +60,16 @@ def pretty(obj):
 
 	# add args
 parser = argparse.ArgumentParser()
-parser.add_argument("outfile", type=str, help="name of the csv outfile")
-parser.add_argument("user_agreement_file", type=str, help="name of user csv file")
 parser.add_argument("--maxsegtime", type=int, help="maximum segment time size", default=5)
 parser.add_argument("--maxlines", type=int, help="maximum number of lines in a segment", default=5)
+parser.add_argument("--binsize", type=int, help="number of datapoints to bin together", default=5)
+parser.add_argument("--minbinentries", type=int, help="minimum threshold of datapoints per bin", default=5)
+parser.add_argument("--maxbinskip", type=int, help="maximum number of lines in a bin", default=30 )
 parser.add_argument("--dbhost", help="Database host name", default=DBHOST)
 parser.add_argument("--dbuser", help="Database user name", default=DBUSER)
 parser.add_argument("--dbname", help="Database name", default=DBNAME)
+parser.add_argument("outfile", type=str, help="filename for the overall agreement data")
+parser.add_argument("user_agreement_file", type=str, help="filename for the user agreement data")
 
 
 	# parse args
@@ -79,12 +83,15 @@ if DBPASS is None:
 	DBPASS = getpass.getpass('enter database password: ')
 
 
-#
+#============================================================================
 #
 # Classes
 #
-#
+#============================================================================
 
+#
+# ETCRow
+#
 class ETCRow:
 	'''Wrapper around the database row'''
 	def __init__(self, row):
@@ -105,6 +112,11 @@ class ETCRow:
 			self.code_added_time.isoformat(' '))
 
 
+#
+# ETCUserCodes
+#
+#	A collection of a single user's codes for a specific datapoint
+#
 class ETCUserCodes:
 	'''Holds a set of codes for the user'''
 	def __init__(self, row):
@@ -121,7 +133,11 @@ class ETCUserCodes:
 			self.codes[code].append(time)
 
 
-
+#
+# ETCDatapoint
+#
+#	A single datapoint from the ETC dataset
+#
 class ETCDatapoint:
 	'''An individiual line with all codes from the users'''
 	def __init__(self, row):
@@ -140,7 +156,11 @@ class ETCDatapoint:
 			self.users[row.user_id].Add(row.code_id, row.code_added_time)
 
 
-
+#
+# Segment
+#
+# 	A segment of several datapoints
+#
 class Segment:
 	''' A container for a segment of datapoints'''
 	def __init__(self, dp):
@@ -159,15 +179,16 @@ class Segment:
 
 		self.datapoints.append(dp)
 
-#	def GetUniqueUsers(self):
-#		users = set()
-#		for u in self.datapoints:
-#			u.
 
 	def __str__(self):
 		return "Segment for %s- %s by %d - datapoints: %d"%(self.time.isoformat(' '), self.max_time.isoformat(' '),self.participant_id, len(self.datapoints))
 
 
+#
+# TimeSegmenter
+#
+#	Segments the datapoints within a specified time range and by participant
+#
 class TimeSegmenter:
 	'''A class for segmenting the data'''
 	def __init__(self, time_threshold = 5):
@@ -213,6 +234,11 @@ class TimeSegmenter:
 			self.active_segments.append(s)
 
 
+#
+# Segmenter
+# 
+#	Segments the datapoints by a number of datapoints
+#
 class Segmenter:
 	'''Segment data by having X datapoints'''
 	def __init__(self, line_threshold = 5):
@@ -243,7 +269,11 @@ class Segmenter:
 			self.active_segment = Segment(dp)
 
 
-
+#
+# Agreement Calculator
+#
+#	Calculates agreement per pair across all datapoints in the segment
+#
 class AgreementCalculator:
 	'''Class to caclulate the agreement'''
 	def __init__(self, segments):
@@ -311,7 +341,7 @@ class AgreementCalculator:
 			row.update(pairs)
 			results.append(row)
 			#print "%s:%s"%(user_ids, pct_agreements)
-		return results
+		return sorted(results, key=lambda x: x['id'])
 
 
 class UserAgreementCalculator:
@@ -478,9 +508,64 @@ class CodeAgreementCalculator:
 			row.update(pairs)
 			results.append(row)
 			#print "%s:%s"%(user_ids, pct_agreements)
+		return sorted(results, key=lambda x: x['id'])
+
+
+
+
+
+def avg(v):
+	return (sum(v) / float(len(v)))
+
+class AverageAggregator:
+	'''Aggregates several segments into one value'''
+	def __init__(self, agreement_data, bin_size=10, cull_pairs_under_threshold=10, maxskip=10):
+		self.agreement_data = agreement_data
+		self.bin_size = bin_size
+		self.cull_threshold = cull_pairs_under_threshold
+		self.maxskip = maxskip
+
+	def average(self,lines):
+		pairs = {}
+		results = {}
+		for l in lines:
+			line_pairs = {p:v for p,v in l.items() if p != 'id' and p != 'time'}
+			#print "line_pairs: ", pretty(line_pairs)
+			for lp,v in line_pairs.items():
+				if lp not in pairs:
+					pairs[lp] = [v]
+				else:
+					pairs[lp].append(v)
+		# average the pairs together
+		results = {k:avg(v) for (k, v) in pairs.items() if len(v) > self.cull_threshold }
+		#print "results: ", pretty(results)
 		return results
 
 
+
+
+
+	def bin(self):
+		results = []
+		cur_bin = { 'min-id': sys.maxint, 'max-id': -sys.maxint-1, 'lines': [] }
+		for i in self.agreement_data:
+			if len(cur_bin['lines']) > self.bin_size:
+				aggregate = self.average(cur_bin['lines'])
+
+				aggregate.update({'id': cur_bin['min-id'], 'time': cur_bin['lines'][0]['time'] })
+				#print pretty(aggregate)
+				results.append(aggregate)
+				#reset the bin
+				cur_bin = { 'min-id': sys.maxint, 'max-id': -sys.maxint-1, 'lines': [] }
+			if cur_bin['min-id'] != sys.maxint and (i['id'] - cur_bin['min-id']) >= self.maxskip:
+				print "maxskip(%d) exceeded (%d,%d)"%(self.maxskip, i['id'], cur_bin['min-id'])
+				cur_bin = { 'min-id': sys.maxint, 'max-id': -sys.maxint-1, 'lines': [] }
+			else:
+				cur_bin['lines'].append(i)
+				cur_bin['min-id'] = min(cur_bin['min-id'], i['id'])
+				cur_bin['max-id'] = max(cur_bin['max-id'], i['id'])
+
+		return results
 
 
 #
@@ -553,6 +638,12 @@ print "max segment length: %d msgs"%maxseg
 
 agreementcalc = AgreementCalculator(segmenter.segments)
 results = agreementcalc.CalcAgreementBySegments()
+print pretty([r['id'] for r in results])
+
+print "aggregating %d lines with %d minimum values to be included"%(args.binsize, args.minbinentries)
+
+aggr = AverageAggregator(results,args.binsize, args.minbinentries, args.maxbinskip)
+results = aggr.bin()
 
 # write out basic pair agreement
 fieldnames = ['id','time']
@@ -564,6 +655,8 @@ data_file = open(args.outfile, "wt")
 csvwriter = csv.DictWriter(data_file, delimiter=",", fieldnames=fieldnames)
 csvwriter.writerow(dict((fn,fn) for fn in fieldnames))
 for row in results:
+	#
+	#print row
 	csvwriter.writerow(row)
 
 
