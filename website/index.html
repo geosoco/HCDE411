@@ -11,7 +11,16 @@
 		<script type="text/javascript" src="js/backbone.js"></script>
 		<script type="text/javascript" src="js/spin.min.js"></script>
 		<script type="text/javascript" src="js/spin_helper.js"></script>
+		<!-- app -->
+		<script type="text/javascript" src="js/app/models.js"></script>
+		<script type="text/javascript" src="js/app/overall_views.js"></script>
+		<script type="text/javascript" src="js/app/user_views.js"></script>
+		<script type="text/javascript" src="js/app/code_views.js"></script>
+		<script type="text/javascript" src="js/app/main_views.js"></script>
 		<script type="text/javascript" src="js/app.js"></script>
+		<script type="text/javascript" src="js/app/router.js"></script>
+
+		<!-- css -->
 		<link href="css/bootstrap.css" rel="stylesheet" type="text/css">
 		<link href="css/colorbrewer.css" rel="stylesheet" type="text/css">
 		<link href="css/default.css" rel="stylesheet" type="text/css">
@@ -22,25 +31,6 @@
 		<script>
 			var sessionSVG = null;
 			var selectedYear = 2004, isSelectingDate = false;
-
-			//
-			//
-			//
-			//
-			//
-			function drawSessions(data) {
-			}
-
-
-			//
-			//
-			//
-			//
-			//
-			function initYearButtons() {
-
-			}
-
 
 			//
 			//
@@ -162,201 +152,6 @@
 			}
 
 
-			function calcMeanAndWidth(data) {
-
-			}
-
-
-
-
-			function drawData(data) {
-				var m = [30, 30, 30, 30],
-					width = $('#graph').width(),
-					height = $('#graph').height(),
-					labelWidth = 30,
-					yAxisWidth = 10,
-					xAxisHeight = 20,
-					graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
-					graphHeight = height - xAxisHeight - m[0] - m[2];
-
-
-				//console.dir(data);
-				var line = d3.svg.line()
-					.interpolate("linear")
-					.x(function(d) { 
-					return x_scale(+d.time); 
-					})
-					.y(function(d) { 
-					return y_scale(+d.value); 
-					});
-
-
-				//
-				// scales
-				//
-				y_scale = d3.scale.linear()
-					.domain( [100.0, 0] )
-					.range( [0,graphHeight] );
-
-				x_scale = d3.scale.linear()
-					.domain( data.extra['range'] )
-					.range([0,graphWidth]);
-
-				//var session_scales = dataMap.
-				//var 
-
-
-				//
-				// axes
-				//
-
-				var yAxis = d3.svg.axis()
-					.scale(y_scale)
-					.orient("left");
-
-				var xAxis = d3.svg.axis()
-					.scale(x_scale)
-					.orient("bottom");
-
-				//
-				// graph
-				//
-
-				$('#graph').empty();
-
-				var svg = d3.select("#graph")
-					.append("svg")
-					.attr("width", width)
-					.attr("height", height);
-
-
-				// draw axes
-				svg.append("g")
-					.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
-					.attr("class", "axis")
-					.call(xAxis);
-
-				svg.append("g")
-					.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
-					.attr("class", "axis")
-					.call(yAxis);
-
-
-				var groups = svg.selectAll("g.data")
-					.data($.map(data.data,function(v,k){
-					return {value: v, time: k}; 
-					}))
-					.enter().append("g")
-					.attr("transform", function(d){
-					return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
-					});
-
-
-				groups.selectAll(".line")
-					.data(function(d){
-					//console.dir(d);
-					return [$.map(d.value,function(v,k){
-						return {value: v, time: k}; 
-					})];
-					})
-					.enter().append("path")
-					.attr("class", "line")
-					.attr("d", line);
-
-			}
-
-
-
-
-			function drawHistogram(elem, data) {
-				var m = [10,10,20,40],
-				el_w = $(elem).width(),
-				el_h = $(elem).height(),
-				w = el_w-m[1]-m[3],
-				h = el_h - m[0] -m[2];
-
-
-				var sortedData = d3.entries(data).sort(function(a,b){
-				return +a.key - +b.key;
-				});
-
-
-				//
-				// scales
-				//
-				var yscale = d3.scale.linear()
-					.domain( [0, d3.max(d3.values(data))] )
-					.range( [h,0] );
-
-				var xscale = d3.scale.linear()
-					.domain( [0,100.0] )
-					.range([0,w]);
-
-
-				// line generator
-				var line = d3.svg.line()
-					.interpolate("linear")
-					.x(function(d) { 
-					return xscale(+d.key); 
-					})
-					.y(function(d) { 
-					return yscale(+d.value); 
-					});
-
-				//
-				// axes
-				//
-
-				var yAxis = d3.svg.axis()
-					.scale(yscale)
-					.ticks(2)
-					.orient("left");
-
-				var xAxis = d3.svg.axis()
-					.scale(xscale)
-					.ticks(3)
-					.orient("bottom");
-
-				//
-				// graph
-				//
-				$(elem).empty();
-				
-				var svg = d3.select(elem)
-					.append("svg")
-					.attr("width", el_w)
-					.attr("height", el_h);
-
-
-				// draw axes
-				svg.append("g")
-					.attr("transform", "translate(" + m[3] + "," + (m[0]+ h) + ")")
-					.attr("class", "axis")
-					.call(xAxis);
-
-				svg.append("g")
-					.attr("transform", "translate(" + m[3] + "," + m[0] + ")")
-					.attr("class", "axis")
-					.call(yAxis);
-
-				svg.append("g").attr("transform", "translate(" + m[3] + "," + m[0] + ")")
-					.selectAll("path.line")
-					.data([sortedData])
-					.enter().append("path")
-					.attr("class", "line")
-					.attr("d", line);
-			}
-
-			function drawPairNames(elem, data) {
-				var list = d3.select(elem);
-
-				list.selectAll("li")
-					.data(d3.keys(data.data))
-					.enter()
-					.append("li")
-					.text(String);
-			}
-
 
 
 			/*
@@ -395,12 +190,12 @@
 
 					dataMap = d3.nest()
 						.key(function(d){
-						return ((new Date(format.parse(d.time))).getYear() + 1900);
+							return ((new Date(format.parse(d.time))).getYear() + 1900);
 						})
 						.key(function(d){ 
 						fulldate = new Date(format.parse(d.time));
 						date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
-						return dayFormat(date); 
+							return dayFormat(date); 
 						})
 						.entries(data);
 
@@ -418,15 +213,12 @@
 					});
 					console.dir(possible_pairs);
 
-					// interaction initi
-					initYearButtons();
-					//drawSessions(dataMap);
-
-					spinner.spin(false);
-
 
 					// router
-					router = new IRAApp();
+					router = new IRA.IRAApp();
+
+					// 
+					spinner.spin(false);
 
 				});
 
@@ -455,21 +247,21 @@
 				<div id="sessions" class="span10"></div>              
 			</div>
 
-			<div id="main-view" class="row-fluid">
-				<div id="graph" class=""></div>
-				<div id="sidepanel" class="scrolllist">
-					<h4>Frequencies</h4>
-					<div id="histogram"></div>
-					<h4>Coders</h4>
-					<div class="scrolllist">
-						<ul id="pairnames"></ul>
-					</div>
-				</div>
-			</div>
-			<div id="sub-view" class="row-fluid">
-
-			</div>
+			<div id="main-view" class="row-fluid"></div>
+			<div id="sub-view" class="row-fluid"></div>
 		</div>        
 	</body>
+
+	<script type="text/template" id="templ-main">
+		<div id="graph" class=""></div>
+		<div id="sidepanel" class="scrolllist">
+			<h4>Frequencies</h4>
+			<div id="histogram"></div>
+			<h4>Coders</h4>
+			<div class="scrolllist">
+				<ul id="pairnames"></ul>
+			</div>
+		</div>	
+	</script>
 
 </html>
