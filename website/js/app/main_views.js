@@ -321,6 +321,22 @@ IRA.Views.LineGraph = Backbone.View.extend({
 
 	initialize: function() {
 		this.listenTo(this.model, "change:data", this.dataChanged);
+		this.render();
+	},
+
+	extent: function(arr, accessor) {
+		// rewrite to be more efficient
+		var min = Number.MAX_VALUE,
+			max = Number.MIN_VALUE;
+
+		arr.forEach(function(d,i){
+			d.forEach(function(d2,i2){
+				min = Math.min(min, accessor(d2,i2));
+				max = Math.max(max, accessor(d2,i2));
+			});
+		});
+
+		return [min,max];
 	},
 
 	render: function() {
@@ -333,23 +349,21 @@ IRA.Views.LineGraph = Backbone.View.extend({
 			h = el_h - m[0] -m[2],
 			data = this.model.get("data");
 
-
-		/*
-		var sortedData = d3.entries(data).sort(function(a,b){
-			return +a.key - +b.key;
-		});
-		*/
-
+		if(typeof data == "undefined" || data === null || data.length == 0) {
+			return;
+		}
 
 		//
 		// scales
 		//
 		this.yscale = this.yscale || d3.scale.linear();
-		this.yscale.domain( this.model.get('yDomain') || [0, d3.max(d3.values(data))] )
+		var ydomain = this.model.get('yDomain') || this.extent(data, function(d) { return d.y; });
+		this.yscale.domain( ydomain )
 			.range( [h,0] );
 
 		this.xscale = this.xscale || d3.scale.linear();
-		this.xscale.domain( this.model.get('xDomain') || [0, d3.max(d3.keys(data))] )
+		var xdomain = this.model.get('xDomain') || this.extent(data, function(d) { return d.x; });
+		this.xscale.domain( xdomain )
 			.range([0,w]);
 
 
@@ -357,10 +371,10 @@ IRA.Views.LineGraph = Backbone.View.extend({
 		this.line = this.line || d3.svg.line()
 			.interpolate(this.model.get("lineInterpolation"))
 			.x(function(d) { 
-				return self.xscale(+d.key); 
+				return self.xscale(+d.x); 
 			})
 			.y(function(d) { 
-				return self.yscale(+d.value); 
+				return self.yscale(+d.y); 
 			});
 
 		//
@@ -368,12 +382,20 @@ IRA.Views.LineGraph = Backbone.View.extend({
 		//
 
 		this.yAxis = this.yAxis || d3.svg.axis();
-		this.yAxis.scale(this.y_scale)
+		this.yAxis.scale(this.yscale)
 			.orient("left");
+		var yTicks = this.model.get("yTicks");
+		if(yTicks) {
+			this.yAxis.ticks(yTicks);
+		}
 
 		this.xAxis = this.xAxis || d3.svg.axis();
-		this.xAxis.scale(this.x_scale)
+		this.xAxis.scale(this.xscale)
 			.orient("bottom");
+		var xTicks = this.model.get("xTicks");
+		if(xTicks) {
+			this.xAxis.ticks(xTicks);
+		}
 
 		//
 		// graph
@@ -381,49 +403,43 @@ IRA.Views.LineGraph = Backbone.View.extend({
 		if(typeof this.svg == "undefined") {
 			this.svg = d3.select(this.el)
 				.append("svg")
-				.attr("width", width)
-				.attr("height", height);
+				.attr("width", el_w)
+				.attr("height", el_h);
 
 			// draw axes
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
+				.attr("transform", "translate(" + (m[3]) + "," + (m[0]+h) + ")" )
 				.attr("class", "x axis")
 				.call(this.xAxis);
 
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
+				.attr("transform", "translate(" + (m[3]) + "," + (m[0]) + ")" )
 				.attr("class", "y axis")
 				.call(this.yAxis);				
 		} else 
 		{
 			// update the axes
-			this.svg.select(".x.axis").call(this.xAxis);
-			this.svg.select(".y.axis").call(this.yAxis);
+			this.svg.select(".x.axis").transition(200).call(this.xAxis);
+			this.svg.select(".y.axis").transition(200).call(this.yAxis);
 		}
 
 
 		var groups = this.svg.selectAll("g.data")
-			.data($.map(data.data,function(v,k) {
-				return {value: v, pair: k}; 
-			}), function(d){
-				return d.pair;
-			});
+			.data(data);
 
 		groups.enter().append("g")
 			.attr("class", "data")
 			.attr("transform", function(d) {
-				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
+				return "translate(" + (m[3]) + "," + (m[0]) + ")"
 			});
 		groups.exit().remove();
 
 
 
 		var lines = groups.selectAll(".line")
-			.data(function(d){
+			.data(function(d,i){
 			//console.dir(d);
-				return [$.map(d.value,function(v,k){
-					return {value: v, time: k}; 
-				})];
+				return [d];
 			});
 
 		lines.enter().append("path")
@@ -431,10 +447,14 @@ IRA.Views.LineGraph = Backbone.View.extend({
 			.attr("d", this.line);
 
 		lines.exit().remove();
+
+		lines.transition(500).attr("d", this.line);
 	},
 
 	dataChanged: function() {
 		console.log('dataChanged');
+
+		this.render();
 	}
 
 });

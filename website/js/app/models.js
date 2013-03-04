@@ -38,7 +38,7 @@ IRA.Models.SelectedSession = Backbone.Model.extend({
 //
 IRA.Models.LineGraphModel = Backbone.Model.extend({
 	defaults: {
-		data: [[]],
+		data: null,
 		margins: [10, 10, 20, 40],
 		xAxisLabel: "",
 		yAxisLabel: "",

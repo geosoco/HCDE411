@@ -140,15 +140,20 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 				.call(this.yAxis);				
 		} else 
 		{
-			this.svg.select(".x.axis").call(this.xAxis);
-			this.svg.select(".y.axis").call(this.yAxis);
+			this.svg.select(".x.axis").transition(200).call(this.xAxis);
+			this.svg.select(".y.axis").transition(200).call(this.yAxis);
 		}
 
+		var mapped_pairs = $.map(data.data,function(v,k) {
+				return {value: v, pair: k}; 
+			});
+
+
+		// temporary hack
+		//this.svg.selectAll("g.data").remove();
 
 		var groups = this.svg.selectAll("g.data")
-			.data($.map(data.data,function(v,k) {
-				return {value: v, pair: k}; 
-			}), function(d){
+			.data(mapped_pairs, function(d){
 				return d.pair;
 			});
 
@@ -169,11 +174,17 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 				})];
 			});
 
+		var extra = data.extra;
 		lines.enter().append("path")
 			.attr("class", "line")
-			.attr("d", this.line);
+			.attr("d", this.line)
+			.datum((function(d,i){
+				return d;
+			}).bind(data));
 
 		lines.exit().remove();
+
+		lines.transition(100).attr("d", this.line);
 
 	},
 
@@ -202,10 +213,38 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 
 	initialize: function() {
 
+		this.listenTo(this.model, "change:data", this.dataChanged );
+
+		var data = this.model.get("data");
+		this.histogramModel = new IRA.Models.LineGraphModel({
+			data: data, 
+			xDomain: [0,100],
+			xTicks: 3,
+			yTicks: 3
+		});
+		this.histogram = new IRA.Views.LineGraph({el: "#histogram", model: this.histogramModel });
 	},
 
 	render: function() {
 
+	},
+
+	dataChanged: function(ev) {
+		console.log("datachanged");
+		console.dir(ev);
+
+		var data = this.model.get("data");
+
+		var transformed = $.map(data.extra.histogram, function(d,i){
+			return {x: +i, y: d };
+		});
+
+		// sort our data first
+		transformed.sort(function(a,b){
+			return a.x - b.x;
+		});
+
+		this.histogramModel.set({data: [transformed] });
 	}
 });
 
