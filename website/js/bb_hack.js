@@ -5,4 +5,5 @@
 	  if (this.onClose){
 	    this.onClose();
 	  }
-	})(Backbone, jQuery);
+	}
+})(Backbone, jQuery);

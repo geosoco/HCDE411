@@ -482,7 +482,7 @@ IRA.Views.LineGraph = Backbone.View.extend({
 	},
 
 	dataChanged: function() {
-		console.log('dataChanged');
+		console.log('linegraph: dataChanged');
 
 		this.render();
 	}

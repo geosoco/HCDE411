@@ -227,14 +227,20 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 
 		var data = this.model.get("data");
 		this.histogramModel = new IRA.Models.LineGraphModel({
-			data: data, 
+			data: null, 
 			xDomain: [0,100],
 			xTicks: 3,
 			yTicks: 3
 		});
+
+		this.transformBaseData(data);
 		this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
 		this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
 		this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
+	},
+
+	onClose: function() {
+		this.model.unbind("change:data", this.dataChanged);
 	},
 
 	render: function() {
@@ -251,13 +257,12 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		}
 	},
 
-	dataChanged: function(ev) {
-		console.log("datachanged");
-		console.dir(ev);
+	transformBaseData: function(baseData) {
+		if(typeof baseData == "undefined" || baseData == null ) {
+			return;
+		}
 
-		var data = this.model.get("data");
-
-		var transformed = $.map(data.extra.histogram, function(d,i){
+		var transformed = $.map(baseData.extra.histogram, function(d,i){
 			return {x: +i, y: d };
 		});
 
@@ -267,13 +272,21 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		});
 
 		this.histogramModel.set({data: [transformed] });
-		this.stats.render();
-		this.coderlist.render();
 	},
 
-	onClose: function() {
-		this.model.unbind("change:data", this.dataChanged);
+	dataChanged: function(ev) {
+		console.log("OverallSidePanel: dataChanged");
+		console.dir(ev);
+
+		var baseData = this.model.get("data");
+		this.transformBaseData(baseData);
+
+		
+		this.stats.render();
+		this.coderlist.render();
 	}
+
+	
 });
 
 

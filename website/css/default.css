@@ -185,6 +185,8 @@ ul.nav {
    width: 7em;
 }
 
-
+#sp-coders .coder-line:hover {
+  background-color: #fcc;
+}
 
 
