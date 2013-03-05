@@ -89,7 +89,7 @@ path.line:hover {
 }
 
 
-#graph, #histogram {
+#graph, #sp-histogram {
   display: block;
 }
 
@@ -99,7 +99,7 @@ path.line:hover {
   float: left;
 }
 
-#histogram {
+#sp-histogram {
   width: 90%;
   height: 80px;
   margin-left:auto;
@@ -108,7 +108,7 @@ path.line:hover {
   box-shadow: 0px 0px 5px 1px #aaa;
 }
 
-#histogram .axis text {
+#sp-histogram .axis text {
   font-size: 7px;
 }
 
@@ -132,6 +132,30 @@ ul.nav {
   overflow: scroll;
 }
 
-#pairnames li {
+.hover-hilight path {
+  stroke: #f00 !important;
+  stroke-width: 2px !important;
+}
+
+/*
+ *
+ * overview sidepanel
+ *
+ */
+
+#sidepanel label {
+  display: inline;
+  font-weight: bold;
+  min-width: 10em;
+  margin-right: 2em;
+}
+
+#sp-coders .coder-line span {
+  color: #aaa;
+}
+
+#sidepanel li {
   list-style-type: none;
 }
+
+

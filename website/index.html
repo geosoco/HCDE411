@@ -51,92 +51,90 @@
 
 
 				data.forEach(function(d,i){
-				var point_sum = 0;
-				var point_cnt = 0;
-				var linenum = 0;
-				for(var pair in d3.values(possible_pairs)) {
-					var pair_name = possible_pairs[pair];
-					var value = d[pair_name];
+					var point_sum = 0;
+					var point_cnt = 0;
+					var linenum = 0;
+					for(var pair in d3.values(possible_pairs)) {
+						var pair_name = possible_pairs[pair];
+						var value = d[pair_name];
 
-					linenum = +d.id;
+						linenum = +d.id;
 
-					timerange[0] = Math.min(timerange[0],Date.parse(d.time));
-					timerange[1] = Math.max(timerange[1],Date.parse(d.time));
-					range[0] = Math.min(range[0], linenum);
-					range[1] = Math.max(range[1], linenum);
-					if(pair_name in d && value != undefined && value != null && value != "") {
-					if(!(linenum in bins)) {
-						bins[linenum] = {};
-					}
-					bins[linenum][pair_name] = +value;
+						timerange[0] = Math.min(timerange[0],Date.parse(d.time));
+						timerange[1] = Math.max(timerange[1],Date.parse(d.time));
+						range[0] = Math.min(range[0], linenum);
+						range[1] = Math.max(range[1], linenum);
+						if(pair_name in d && value != undefined && value != null && value != "") {
+							if(!(linenum in bins)) {
+								bins[linenum] = {};
+							}
+							bins[linenum][pair_name] = +value;
 
-					// point data
-					point_cnt++;
-					point_sum += +value;
+							// point data
+							point_cnt++;
+							point_sum += +value;
 
 
 
-					// pair data
-					if(!(pair_name in pair_data)) {
-						pair_data[pair_name] = {
-						cnt: 0,
-						sum: 0,
-						avg: 0,
-						stddev: 0
+							// pair data
+							if(!(pair_name in pair_data)) {
+								pair_data[pair_name] = {
+									cnt: 0,
+									sum: 0,
+									avg: 0,
+									stddev: 0
+								}
+							}
+
+							pair_data[pair_name].cnt++;
+							pair_data[pair_name].sum+= +value;
+
+							// check if our data is in the pair already
+							if(!(pair_name in res.data)){
+								res.data[pair_name] = {}
+							}
+
+							//res[pair_name][d.time] = d[pair_name];
+							res.data[pair_name][linenum] = d[pair_name];
+
+							// histogram
+							if( !(value in histogram)) {
+								histogram[value] = 0;
+							}
+							histogram[value]++;
+
+							overall_sum += +value;
+							overall_cnt++;
+
 						}
 					}
 
-					pair_data[pair_name].cnt++;
-					pair_data[pair_name].sum+= +value;
-
-					// check if our data is in the pair already
-					if(!(pair_name in res.data)){
-						res.data[pair_name] = {}
+					var point_avg = point_sum/point_cnt;
+					var point_var = 0;
+					for(var pair in d3.values(possible_pairs)) {
+						var pair_name = possible_pairs[pair];
+						var value = d[pair_name];
+						if(pair_name in d && value != undefined && value != null && value != "") {
+							var diff = value - point_avg;
+							point_var += diff * diff;
+						}
 					}
+					var point_sd = Math.sqrt(point_var);
 
-					//res[pair_name][d.time] = d[pair_name];
-					res.data[pair_name][linenum] = d[pair_name];
-
-					// histogram
-					if( !(value in histogram)) {
-						histogram[value] = 0;
+					point_details[linenum] = {
+						sum: point_sum,
+						cnt: point_cnt,
+						avg: point_avg,
+						ssq: point_var,
+						sd: point_sd
 					}
-					histogram[value]++;
-
-					overall_sum += +value;
-					overall_cnt++;
-
-					}
-				}
-
-				var point_avg = point_sum/point_cnt;
-				var point_var = 0;
-				for(var pair in d3.values(possible_pairs)) {
-					var pair_name = possible_pairs[pair];
-					var value = d[pair_name];
-					if(pair_name in d && value != undefined && value != null && value != "") {
-
-					var diff = value - point_avg;
-					point_var += diff * diff;
-					}
-				}
-				var point_sd = Math.sqrt(point_var);
-
-				point_details[linenum] = {
-					sum: point_sum,
-					cnt: point_cnt,
-					avg: point_avg,
-					ssq: point_var,
-					sd: point_sd
-				}
-
 
 				});
 
 				res.extra['timerange'] = timerange;
 				res.extra['range'] = range;
 				res.extra['histogram'] = histogram;
-				res.extra['overall_avg'] = overall_sum / overall_cnt;
+				res.extra['overall'] = { avg: (overall_sum / overall_cnt), sum: overall_sum, cnt: overall_cnt, ssq: 0, sd: 0};
 				res.extra['pair_data'] = pair_data;
 				res.extra['point_data'] = point_details;
 
@@ -256,10 +254,12 @@
 		<div id="graph" class=""></div>
 		<div id="sidepanel" class="scrolllist">
 			<h4>Frequencies</h4>
-			<div id="histogram"></div>
+			<div id="sp-histogram"></div>
+			<h4>Details</h4>
+			<div id="sp-details"></div>
 			<h4>Coders</h4>
 			<div class="scrolllist">
-				<ul id="pairnames"></ul>
+				<ul id="sp-coders"></ul>
 			</div>
 		</div>	
 	</script>

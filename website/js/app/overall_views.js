@@ -159,6 +159,9 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 
 		groups.enter().append("g")
 			.attr("class", "data")
+			.attr("data-pair", function(d){
+				return d.pair;
+			})
 			.attr("transform", function(d) {
 				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
 			});
@@ -222,11 +225,23 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 			xTicks: 3,
 			yTicks: 3
 		});
-		this.histogram = new IRA.Views.LineGraph({el: "#histogram", model: this.histogramModel });
+		this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
+		this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
+		this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
 	},
 
 	render: function() {
+		var data = this.model.get("data");
 
+		if(data) {
+
+		} else {
+			$("#sp-")
+		}
+
+		if(this.stats) {
+			this.stats.render();
+		}
 	},
 
 	dataChanged: function(ev) {
@@ -245,7 +260,176 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		});
 
 		this.histogramModel.set({data: [transformed] });
+		this.stats.render();
+		this.coderlist.render();
 	}
+});
+
+
+//
+//
+// 
+//
+//
+
+IRA.Views.Overall.Stats = Backbone.View.extend({
+	events: {
+
+	},
+
+	initialize: function() {
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+
+		this.render();
+	},
+
+	render: function() {
+		if(this.model) {
+			var data = this.model.get("data");
+
+			this.$el.empty();
+			if(typeof data != "undefined" && data != null) {
+				this.$el.append("<div><label>Mean</label><span>" + data.extra.overall.avg.toString().match(/-?\d*\.\d{2}/) + "</span></div>");	
+			}
+
+		}		
+	}
+
+});
+
+
+//
+//
+// 
+//
+//
+
+IRA.Views.Overall.CoderList = Backbone.View.extend({
+	events: {
+		"hover .coder-line": "onHover", 
+		"mouseout .coder-line label": "onHoverExit",
+	},
+
+	initialize: function() {
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+
+		this.render();
+	},
+
+	render: function() {
+		if(this.model) {
+			var data = this.model.get("data");
+
+			this.$el.empty();
+			if(typeof data != "undefined" && data != null) {
+				var html = "";
+
+				var coders = {};
+				d3.entries(data.extra.pair_data).forEach(function(d,i){
+					var matches = d.key.match(/(\d{1,2})-(\d{1,2})/);
+
+					if(matches != null && matches.length > 2) {
+						var coder1 = matches[1],
+							coder2 = matches[2];
+
+						if(!(coder1 in coders)) {
+							coders[coder1] = {pairs: [d.key], vals: [d.value.avg] };
+						} else {
+							coders[coder1].pairs.push(d.key);
+							coders[coder1].vals.push(d.value.avg);
+						}
+						if(!(coder2 in coders)) {
+							coders[coder2] = {pairs: [d.key], vals: [d.value.avg] };
+						} else {
+							coders[coder2].pairs.push(d.key);
+							coders[coder2].vals.push(d.value.avg);
+						}
+
+
+					} 
+				});
+
+				console.dir(coders);
+				this.coders = coders;
+
+				/*
+				// d3 version which attaches data
+				d3.selectAll("li.coder-line")
+					.remove();
+
+				var lines = d3.select(this.el).selectAll("li.coder-line")
+					.data(d3.entries(coders))
+					.enter()
+					.append("li")
+					.attr('data-coder', function(d) { 
+						return d.key; 
+					})
+					.attr('class', 'coder-line');
+
+				lines.append("label")
+					.text(function(d){ 
+						return d.key;
+					});
+
+				lines.append("span")
+					.text(function(d){ 
+						return d3.mean(d.value.vals); 
+					});
+
+				lines.datum(function(d){ 
+						return d.value; 
+					});
+				*/
+
+				
+				d3.entries(coders).forEach(function(d){
+					html += "<li class='coder-line' data-coder='" + d.key +"'><label>" + d.key + "</label><span>" + (d3.mean(d.value.vals)) + "</span></li>";
+				});
+				this.$el.html(html);
+
+				var items = 0;
+			}
+
+		}		
+	},
+
+	renderHoverHilight: function(list) {
+		// remove hilight 
+		$('#graph g.data').attr('class', 'data');
+
+		// skip out if no coder specified
+		if(typeof list == "undefined" || list == null || list.length == 0) {
+			return;
+		}
+
+		list.forEach(function(d){
+			$('#graph g.data[data-pair="' + d + '"]').attr('class', 'data hover-hilight');
+			console.log($('.hover-hilight').first());
+		});
+	},
+
+	onHover: function(ev) {
+		console.log("coder hover");
+		console.dir(ev);
+
+		var data = this.model.get("data");
+		var coder = null;
+		if(ev.srcElement.tagName.toUpperCase() == "LI") {
+			coder = $(ev.srcElement).attr('data-coder');
+		} else {
+			coder = $(ev.srcElement).parent('li').attr('data-coder');
+		}
+		
+		this.renderHoverHilight(this.coders[coder].pairs);
+	},
+
+	onHoverExit: function(ev) {
+		console.log("coder hover exit");
+		console.dir(ev);
+
+		this.renderHoverHilight();
+	}
+
 });
 
 
