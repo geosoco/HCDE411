@@ -27,8 +27,6 @@ IRA.IRAApp = Backbone.Router.extend({
 
 		// views 
 		this.modeSelectView = new IRA.Views.ModeSelect({el: "#mode-select", model: this.selectedMode });
-		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.selectedSession });
-		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.selectedSession });
 		this.mainView = new IRA.Views.MainView({el: '#main-view', model: { selectedMode: this.selectedMode, selectedSession: this.selectedSession} });
 
 		this.selectedMode.set({mode: 0});

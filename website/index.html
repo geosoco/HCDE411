@@ -74,8 +74,6 @@
 							point_cnt++;
 							point_sum += +value;
 
-
-
 							// pair data
 							if(!(pair_name in pair_data)) {
 								pair_data[pair_name] = {
@@ -237,20 +235,18 @@
   					<button type="button" class="btn btn-primary" data-mode="2">Codes</button>
 				</div>
 			</div>
-
-			<div class="row-fluid">
-				<div id="yearselect">
-					<ul class="nav nav-pills"></ul>
-				</div>
-				<div id="sessions" class="span10"></div>              
-			</div>
-
 			<div id="main-view" class="row-fluid"></div>
 			<div id="sub-view" class="row-fluid"></div>
 		</div>        
 	</body>
 
 	<script type="text/template" id="templ-main">
+		<div class="row-fluid">
+			<div id="yearselect">
+				<ul class="nav nav-pills"></ul>
+			</div>
+			<div id="sessions" class="span10"></div>              
+		</div>	
 		<div id="graph" class=""></div>
 		<div id="sidepanel" class="scrolllist">
 			<h4>Frequencies</h4>
@@ -259,9 +255,51 @@
 			<div id="sp-details"></div>
 			<h4>Coders</h4>
 			<div class="scrolllist">
-				<ul id="sp-coders"></ul>
+				<div id="coder-list-header" class="coder-line">
+					<div><i class="icon-eye-close"></i></div>
+					<div><i class="icon-star"></i></div>
+					<div>#</div>
+					<div>Mean</div>
+				</div>
+				<ul id="sp-coders">
+				</ul>
 			</div>
 		</div>	
 	</script>
-
+	<script type="text/template" id="templ-users">
+		<div id="graph" class=""></div>
+		<div id="sidepanel" class="scrolllist">
+			<h4>Details</h4>
+			<div id="sp-details"></div>
+			<h4>Coders</h4>
+			<div class="scrolllist">
+				<div id="coder-list-header" class="coder-line">
+					<div><i class="icon-eye-close"></i></div>
+					<div><i class="icon-star"></i></div>
+					<div>#</div>
+					<div>Mean</div>
+				</div>
+				<ul id="sp-coders">
+				</ul>
+			</div>
+		</div>	
+	</script>
+	<script type="text/template" id="templ-codes">
+		<div id="graph" class=""></div>
+		<div id="sidepanel" class="scrolllist">
+			<h4>Details</h4>
+			<div id="sp-details"></div>
+			<h4>Codes</h4>
+			<div class="scrolllist">
+				<div id="code-list-header" class="code-line">
+					<div><i class="icon-eye-close"></i></div>
+					<div><i class="icon-star"></i></div>
+					<div>#</div>
+					<div>Mean</div>
+				</div>
+				<ul id="sp-codes">
+				</ul>
+			</div>
+		</div>	
+	</script>
 </html>

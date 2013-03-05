@@ -79,6 +79,13 @@ path.line:hover {
   -o-transition: stroke 0.1s, stroke-width 0.1s;
 }
 
+/*
+ *
+ * general session stuff
+ *
+ */
+
+
 #sessions text {
   font-size: 10px;
 }
@@ -157,5 +164,27 @@ ul.nav {
 #sidepanel li {
   list-style-type: none;
 }
+
+#coder-list-header {
+  background: #ddd;
+}
+
+.coder-line > div {
+  display: inline-block;  
+}
+
+.coder-line div:nth-child(1), .coder-line div:nth-child(2) {
+  width: 20px;
+}
+
+.coder-line div:nth-child(3) {
+   width: 3em;
+}
+
+.coder-line div:nth-child(4) {
+   width: 7em;
+}
+
+
 
 

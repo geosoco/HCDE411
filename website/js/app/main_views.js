@@ -35,7 +35,7 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 
 		var newMode = $(ev.srcElement).attr('data-mode');
 		console.dir(newMode);
-		//this.model.set({'mode': newMode });
+		
 
 		this.render();
 
@@ -45,6 +45,9 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 			case 2: modeName = 'codes'; break;
 
 		}
+
+		// update the framework
+		this.model.set({'mode': newMode });
 		router.navigate('/' + modeName );
 	},
 
@@ -88,12 +91,18 @@ IRA.Views.YearSelect = Backbone.View.extend({
 				.enter().append("li")
 				.append("a")
 				.attr("href", "#")
+				.attr("data-year", function(d) { return d.key; })
+				.attr("data-yearIdx", function(d,i) { return i; })
 				.text(function(d){ 
 					return d.key; 
 				})
 				.datum(function(d,i){
 					return {idx: i}
 				});
+
+		var selected = this.model.get('yearIdx');
+		$('li',this.$el).removeClass('active');
+		$('li:nth-child(' + (selected+1) + ')', this.$el).addClass('active');
 
 		//$('#yearselect li:first-child').attr('class', 'active');
 		//drawSessions(dataMap[0]);
@@ -135,12 +144,19 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 	initialize: function() {
 		this.listenTo(this.model, "change:yearIdx", this.yearChanged);
 		this.listenTo(this.model, "change:date", this.sessionChanged);
+
+		var yearIdx = this.model.get("yearIdx");
+		this.data = dataMap[yearIdx];
+		if(this.data) {
+			this.render();
+		}
 	},
 
 	render: function() {
 				var width = 600,
 					height = 70,
-					format = d3.time.format("%b %d");
+					format = d3.time.format("%b %d"),
+					self = this;
 
 				// sort our data first
 				this.data.values.sort(function(a,b){
@@ -149,11 +165,13 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 
 
 				// build our scale
-				var x_scale = d3.scale.ordinal()
-						.domain(this.data.values.map(function(d2) { return d2.key; }))
+				this.x_scale = this.x_scale || d3.scale.ordinal()
 						.rangeRoundBands([0,width],0);
 
-				var color = d3.scale.quantize()
+				this.x_scale.domain(this.data.values.map(function(d2) { return d2.key; }))
+						
+
+				this.color = this.color || d3.scale.quantize()
 						.domain([0, 32])
 						.range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
 
@@ -174,7 +192,7 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 
 				daysGraph.transition()
 							.attr("transform", function(d){
-								return "translate(" + x_scale(d.key) + ",0)";
+								return "translate(" + self.x_scale(d.key) + ",0)";
 							});
 
 				var days = daysGraph.enter()
@@ -202,7 +220,7 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 						return d.key;
 					})
 					.attr("class", function(d){ 
-						return "day " + color(d.values.length); 
+						return "day " + self.color(d.values.length); 
 					});
 
 				days.append("text")
@@ -214,7 +232,7 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 
 				days.transition(100)
 					.attr("transform", function(d){
-						return "translate(" + x_scale(d.key) + ",0)";
+						return "translate(" + self.x_scale(d.key) + ",0)";
 					});
 
 	},
@@ -294,7 +312,7 @@ IRA.Views.MainView = Backbone.View.extend({
 
 		var newView = null;
 		var viewParams = {el: '#main-view', model: this.model.selectedSession };
-		switch(mode) {
+		switch(+mode) {
 			case 0:
 				newView = new IRA.Views.Overall.MainView(viewParams);
 				break;

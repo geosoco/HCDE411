@@ -9,7 +9,7 @@
 // Namespace 
 var IRA = IRA || {};
 IRA.Views = IRA.Views || {};
-IRA.Views.Codes = {};
+IRA.Views.Codes = IRA.Views.Codes || {};
 
 //
 //
@@ -23,12 +23,20 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 	},
 
 	initialize: function() {
+		console.log('Codesview-init');
 
+		this.render();
+
+		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: this.model });
+		this.sidePanel = new IRA.Views.Overall.SidePanel({ el: "#sidepanel", model: this.model });
+		
 	}, 
 
 	render: function() {
+		var template = _.template($("#templ-codes").html());
+		this.$el.html( template );
+	},
 
-	}
 });
 
 

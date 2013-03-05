@@ -28,6 +28,8 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 
 		this.render();
 
+		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
+		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.model });
 		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: this.model });
 		this.sidePanel = new IRA.Views.Overall.SidePanel({ el: "#sidepanel", model: this.model });
 		
@@ -381,9 +383,14 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 					});
 				*/
 
-				
+
 				d3.entries(coders).forEach(function(d){
-					html += "<li class='coder-line' data-coder='" + d.key +"'><label>" + d.key + "</label><span>" + (d3.mean(d.value.vals)) + "</span></li>";
+					html += "<li class='coder-line' data-coder='" + d.key +"'>";
+					html += '<div class="spotlight">&nbsp;</div>';
+					html += '<div class="vis-togle">&nbsp;</div>';
+					html += '<div>' + d.key + '</div>';
+					html += '<div>' + (d3.mean(d.value.vals)) + '</div>'
+					html += '</li>';
 				});
 				this.$el.html(html);
 
