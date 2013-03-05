@@ -62,6 +62,11 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 		this.render();
 	}, 
 
+	onClose: function() {
+		console.log('mainview-overall-close');
+		this.model.unbind("change:data", this.dataChanged);
+	},
+
 	render: function() {
 		var data = this.model.get("data");
 
@@ -238,7 +243,7 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		if(data) {
 
 		} else {
-			$("#sp-")
+			//$("#sp-")
 		}
 
 		if(this.stats) {
@@ -264,6 +269,10 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		this.histogramModel.set({data: [transformed] });
 		this.stats.render();
 		this.coderlist.render();
+	},
+
+	onClose: function() {
+		this.model.unbind("change:data", this.dataChanged);
 	}
 });
 

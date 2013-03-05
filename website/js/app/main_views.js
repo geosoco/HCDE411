@@ -78,6 +78,10 @@ IRA.Views.YearSelect = Backbone.View.extend({
 		this.listenTo(this.model, "change:yearIdx", this.yearChanged);
 	},
 
+	remove: function() {
+		this.$el.unbind();
+	},
+
 	render: function() {
 		/*
 		this.$el.empty();
@@ -311,6 +315,7 @@ IRA.Views.MainView = Backbone.View.extend({
 		var mode = this.model.selectedMode.get("mode");
 
 		var newView = null;
+		$('#main-view').html('');
 		var viewParams = {el: '#main-view', model: this.model.selectedSession };
 		switch(+mode) {
 			case 0:
@@ -342,17 +347,24 @@ IRA.Views.LineGraph = Backbone.View.extend({
 		this.render();
 	},
 
+	onClose: function() {
+		console.log('IRA.Views.LineGraph');
+		this.model.unbind("change:data", this.dataChanged);
+	},
+
 	extent: function(arr, accessor) {
 		// rewrite to be more efficient
 		var min = Number.MAX_VALUE,
 			max = Number.MIN_VALUE;
 
-		arr.forEach(function(d,i){
-			d.forEach(function(d2,i2){
-				min = Math.min(min, accessor(d2,i2));
-				max = Math.max(max, accessor(d2,i2));
+		if(arr) {
+			arr.forEach(function(d,i){
+				d.forEach(function(d2,i2){
+					min = Math.min(min, accessor(d2,i2));
+					max = Math.max(max, accessor(d2,i2));
+				});
 			});
-		});
+		}
 
 		return [min,max];
 	},

@@ -27,8 +27,8 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 
 		this.render();
 
-		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: this.model });
-		this.sidePanel = new IRA.Views.Overall.SidePanel({ el: "#sidepanel", model: this.model });
+		//this.graph = new IRA.Views.Codes.Graph({el: "#graph", model: this.model });
+		//this.sidePanel = new IRA.Views.Codes.SidePanel({ el: "#sidepanel", model: this.model });
 		
 	}, 
 
