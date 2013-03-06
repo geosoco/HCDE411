@@ -85,6 +85,10 @@ path.line:hover {
  *
  */
 
+ #mode-select {
+  margin-bottom: 2em;
+ }
+
 
 #sessions text {
   font-size: 10px;
@@ -112,6 +116,7 @@ path.line:hover {
   margin-left:auto;
   margin-right:auto;
   background: #fff;
+  border: 1px solid #666;
   box-shadow: 0px 0px 5px 1px #aaa;
 }
 
@@ -179,14 +184,20 @@ ul.nav {
 
 .coder-line div:nth-child(3) {
    width: 3em;
+   text-align: center;
 }
 
 .coder-line div:nth-child(4) {
    width: 7em;
+   text-align: center;
 }
 
 #sp-coders .coder-line:hover {
   background-color: #fcc;
+}
+
+#sp-coders {
+  margin-left: 0;
 }
 
 

@@ -174,13 +174,13 @@
 			// ready
 			//
 			$(document).ready(function() {  
-				$('#graph').empty();
+
 				format = d3.time.format("%Y-%m-%d %H:%M:%S");
 				dayFormat = d3.time.format("%Y-%m-%d");
 
 				var spinner = $('body').spin("small");
 
-				d3.csv("data/20line.csv", function(csv) {
+				d3.csv("data/15line.csv", function(csv) {
 					console.log('got csv!');
 					console.dir(csv);
 					data = csv;
@@ -229,7 +229,7 @@
 				<legend>Inter-rater Reliability</legend>
 			</div>
 
-			<div>
+			<div class="row-fluid">
 				<div class="btn-group" data-toggle="buttons-radio" id="mode-select">
   					<button type="button" class="btn btn-primary active" data-mode="0">All</button>
   					<button type="button" class="btn btn-primary" data-mode="1">Users</button>

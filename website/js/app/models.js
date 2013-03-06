@@ -54,3 +54,27 @@ IRA.Models.LineGraphModel = Backbone.Model.extend({
 	}
 });
 
+
+//
+// Layer Model
+//
+IRA.Models.Layer = Backbone.Model.extend({
+	defaults: {
+		id: -1,
+		name: "",
+		details: "",
+		visible: 0,
+		spotlight: 0
+	},
+
+	initialize: function() {
+
+	}
+});
+
+
+IRA.Models.LayerCollection = Backbone.Collection.extend({
+	model: IRA.Models.Layer
+});
+
+

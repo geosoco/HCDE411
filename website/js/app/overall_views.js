@@ -165,13 +165,16 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 			});
 
 		groups.enter().append("g")
+			.attr("opacity",0)
 			.attr("class", "data")
 			.attr("data-pair", function(d){
 				return d.pair;
 			})
 			.attr("transform", function(d) {
 				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
-			});
+			}).transition(500)
+			.attr("opacity", 1);
+
 		groups.exit().remove();
 
 

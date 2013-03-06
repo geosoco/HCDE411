@@ -314,8 +314,15 @@ IRA.Views.MainView = Backbone.View.extend({
 		console.log('>> mainview mode changed');
 		var mode = this.model.selectedMode.get("mode");
 
-		var newView = null;
+		// close the current view
+		if(this.curView && this.curView.close) {
+			this.curView.close();
+		}
+		// clear the view
 		$('#main-view').html('');
+
+		// get the current view
+		var newView = null;
 		var viewParams = {el: '#main-view', model: this.model.selectedSession };
 		switch(+mode) {
 			case 0:
@@ -329,6 +336,7 @@ IRA.Views.MainView = Backbone.View.extend({
 				break;
 		}
 
+		// set it in our class
 		this.curView = newView;
 	}
 });
