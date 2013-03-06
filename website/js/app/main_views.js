@@ -336,7 +336,7 @@ IRA.Views.MainView = Backbone.View.extend({
 				break;
 		}
 
-		// set it in our class
+		// set it in our class (TODO: this should probably be in the model? )
 		this.curView = newView;
 	}
 });

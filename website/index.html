@@ -255,7 +255,7 @@
 			<h4>Details</h4>
 			<div id="sp-details"></div>
 			<h4>Coders</h4>
-			<div class="scrolllist">
+			<div class="scrolllist" id="sp-coderlist">
 				<div id="coder-list-header" class="coder-line">
 					<div><i class="icon-eye-close"></i></div>
 					<div><i class="icon-star"></i></div>
@@ -302,5 +302,22 @@
 				</ul>
 			</div>
 		</div>	
+	</script>
+	<script type="text/template" id="templ-layerlist">
+		<div class="layer-item layer-header">
+			<div><i class="icon-eye-close"></i></div>
+			<div><i class="icon-star"></i></div>
+			<div>#</div>
+			<div>Mean</div>
+		</div>
+		<ul class="layerlist-body">
+		</ul>
+
+	</script>
+	<script type="text/template" id="templ-layerlistitem">
+		<div class="vis-toggle"><% if(visible) { %><i class="icon-eye-open"></i><% } else { %><i class="icon-eye-close ll-unselected"></i><% } %></div>
+		<div class="spotlight-toggle"><% if(spotlight) { %><i class="icon-star"></i><% } else { %><i class="icon-star-empty ll-unselected"></i><% } %></div>
+		<div><%= name %></div>
+		<div><%= details %></div>
 	</script>
 </html>

@@ -63,8 +63,8 @@ IRA.Models.Layer = Backbone.Model.extend({
 		id: -1,
 		name: "",
 		details: "",
-		visible: 0,
-		spotlight: 0
+		visible: true,
+		spotlight: false
 	},
 
 	initialize: function() {
