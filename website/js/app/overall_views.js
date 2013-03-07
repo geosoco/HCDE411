@@ -596,6 +596,40 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 
 	onCollectionChanged: function(ev) {
 		console.log('coderlist2::onCollectionChanged');
+		console.dir(ev);
+
+		// not currently necessary as we always  reset it
+		//this.render();
+
+		// disable the other items
+
+		// deal with spotlight events
+		if(ev && ev.changed && 'spotlight' in ev.changed ) {
+			var spotlight = ev.changed.spotlight;
+
+			var pairs = ev.attributes.pairs;
+
+
+			// shut off any other item that is spotlighted
+			this.collection.each(function(d){
+				if(d.attributes.id != ev.attributes.id && d.attributes.spotlight === true) {
+					d.set({spotlight: false}, {silent: true});
+				}
+			});
+
+			if(spotlight === true) {
+				$('g[data-pair]').attr("opacity", 0.1);
+				// reset opacity
+				pairs.forEach(function(d) {
+					$("g[data-pair=" + d + "]").attr("opacity", 1);
+				});
+			} else {
+				pairs.forEach(function(d,i){
+					$("g[data-pair]").attr("opacity", 1);
+				});
+			}
+		}
+
 		this.render();
 	},
 
