@@ -145,7 +145,7 @@ ul.nav {
 }
 
 .hover-hilight path {
-  stroke: #f00 !important;
+  stroke: #FF9500 !important;
   stroke-width: 2px !important;
 }
 
@@ -192,7 +192,8 @@ li.layer-item {
 }
 
 .layerlist-body .layer-item:hover {
-  background-color: #fcc;
+  background-color: #0088cc;
+  color: #fff;
 }
 
 .layerlist-body {

@@ -557,8 +557,8 @@ IRA.Views.Overall.LayerView = Backbone.View.extend({
 //
 IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 	events: {
-		"hover .coder-line": 			"onHover", 
-		"mouseout .coder-line label": 	"onHoverExit",
+		"hover .layer-item": 			"onHover", 
+		"mouseout .layer-item": 	"onHoverExit",
 	},
 
 	initialize: function() {
@@ -586,8 +586,42 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 		this.collection.each(this.addOne, this);
 	},
 
-	onHover: function(ev) {
+	renderHoverHilight: function(list) {
+		// remove hilight 
+		$('#graph g.data').attr('class', 'data');
 
+		// skip out if no coder specified
+		if(typeof list == "undefined" || list == null || list.length == 0) {
+			return;
+		}
+
+		list.forEach(function(d){
+			$('#graph g.data[data-pair="' + d + '"]').attr('class', 'data hover-hilight');
+			console.log($('.hover-hilight').first());
+		});
+	},
+
+	onHover: function(ev) {
+		console.log("coder hover");
+		console.dir(ev);
+
+		//var data = this.model.get("data");
+		var coder = null;
+		if(ev.srcElement.tagName.toUpperCase() == "LI") {
+			coder = $(ev.srcElement).attr('data-layerid');
+		} else {
+			coder = $(ev.srcElement).parent('li').attr('data-layerid');
+		}
+		
+		if(coder) {
+			var coderItem = this.collection.get(+coder);
+
+			if(coderItem) {
+				this.renderHoverHilight(coderItem.get("pairs"));
+			}
+			
+		}
+		
 	},
 
 	onHoverExit: function(ev) {
