@@ -29,12 +29,12 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 	}, 
 
 	selchanged: function(ev) {
-		console.log('ModeSelect changed');
+		//console.log('ModeSelect changed');
 		//console.dir(ev);
 		//console.dir($(ev.srcElement).attr('data-mode'));
 
 		var newMode = $(ev.srcElement).attr('data-mode');
-		console.dir(newMode);
+		//console.dir(newMode);
 		
 
 		this.render();
@@ -52,10 +52,10 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 	},
 
 	modechanged: function(ev) {
-		console.log('ModeView: mode changed');
+		//console.log('ModeView: mode changed');
 
 		var mode = this.model.get('mode');
-		console.dir(mode);
+		//console.dir(mode);
 
 		this.render();
 	}
@@ -113,7 +113,7 @@ IRA.Views.YearSelect = Backbone.View.extend({
 	},
 
 	yearChanged: function() {
-		console.log('year changed');
+		//console.log('year changed');
 		var selected = this.model.get('yearIdx');
 		$('li',this.$el).removeClass('active');
 		$('li:nth-child(' + (selected+1) + ')', this.$el).addClass('active');
@@ -122,10 +122,10 @@ IRA.Views.YearSelect = Backbone.View.extend({
 	selchanged: function(ev) {
 		this.selected = ev.srcElement.text;
 
-		console.log('clicked: ' + ev.target.innerText);
+		//console.log('clicked: ' + ev.target.innerText);
 		var yearIdx = d3.select(ev.target).datum().idx;
 		this.model.set({yearIdx: yearIdx, year: ev.target.innerText});
-		console.dir(dataMap[yearIdx]);
+		//console.dir(dataMap[yearIdx]);
 		$('li', this.$el).attr('class','');
 		$(ev.target).parent().attr('class','active');
 
@@ -242,7 +242,7 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 	},
 
 	yearChanged: function(ev) {
-		console.log('yearChanged');
+		//console.log('yearChanged');
 
 		var yearIdx = this.model.get("yearIdx");
 		this.data = dataMap[yearIdx];
@@ -250,8 +250,8 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 	},
 
 	sessionChanged: function(ev) {
-		console.log('session Changed');
-		console.dir(ev);
+		//console.log('session Changed');
+		//console.dir(ev);
 
 		var date = this.model.get("date");
 		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
@@ -302,7 +302,7 @@ IRA.Views.MainView = Backbone.View.extend({
 	},
 
 	initialize: function() {
-		console.log('mainview init');
+		//console.log('mainview init');
 		this.listenTo(this.model.selectedMode, "change:mode", this.modeChanged);
 	}, 
 
@@ -311,7 +311,7 @@ IRA.Views.MainView = Backbone.View.extend({
 	},
 
 	modeChanged: function() {
-		console.log('>> mainview mode changed');
+		//console.log('>> mainview mode changed');
 		var mode = this.model.selectedMode.get("mode");
 
 		// close the current view
@@ -356,7 +356,7 @@ IRA.Views.LineGraph = Backbone.View.extend({
 	},
 
 	onClose: function() {
-		console.log('IRA.Views.LineGraph');
+		//console.log('IRA.Views.LineGraph');
 		this.model.unbind("change:data", this.dataChanged);
 	},
 
@@ -490,7 +490,7 @@ IRA.Views.LineGraph = Backbone.View.extend({
 	},
 
 	dataChanged: function() {
-		console.log('linegraph: dataChanged');
+		//console.log('linegraph: dataChanged');
 
 		this.render();
 	}

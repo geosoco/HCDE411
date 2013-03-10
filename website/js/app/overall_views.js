@@ -24,7 +24,7 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 	},
 
 	initialize: function() {
-		console.log('mainview-init');
+		//console.log('mainview-init');
 
 		this.render();
 
@@ -55,7 +55,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 	},
 
 	initialize: function() {
-		console.log('mainview-init');
+		//console.log('mainview-init');
 
 		this.listenTo(this.model, "change:data", this.dataChanged );
 
@@ -63,7 +63,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 	}, 
 
 	onClose: function() {
-		console.log('mainview-overall-close');
+		//console.log('mainview-overall-close');
 		this.model.unbind("change:data", this.dataChanged);
 	},
 
@@ -203,8 +203,8 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 
 
 	dataChanged: function(ev) {
-		console.log("dataChanged");
-		console.dir(ev);
+		//console.log("dataChanged");
+		//console.dir(ev);
 
 		this.render();
 
@@ -283,8 +283,8 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 	},
 
 	dataChanged: function(ev) {
-		console.log("OverallSidePanel: dataChanged");
-		console.dir(ev);
+		//console.log("OverallSidePanel: dataChanged");
+		//console.dir(ev);
 
 		var baseData = this.model.get("data");
 		this.transformBaseData(baseData);
@@ -326,14 +326,14 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 					} 
 				});
 
-				console.log("coders");
-				console.dir(coders);
+				//console.log("coders");
+				//console.dir(coders);
 
 				var coder_array = d3.entries(coders).map(function(d,i){
 					return {
 						id: +d.key,
 						name: d.key,
-						details: d3.mean(d.value.vals),
+						details: Utils.Math.trunc(d3.mean(d.value.vals),2),
 						pairs: d.value.pairs,
 						averages: d.value.vals
 					}
@@ -440,7 +440,7 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 					} 
 				});
 
-				console.dir(coders);
+				//console.dir(coders);
 				this.coders = coders;
 
 				d3.entries(coders).forEach(function(d){
@@ -470,13 +470,13 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 
 		list.forEach(function(d){
 			$('#graph g.data[data-pair="' + d + '"]').attr('class', 'data hover-hilight');
-			console.log($('.hover-hilight').first());
+			//console.log($('.hover-hilight').first());
 		});
 	},
 
 	onHover: function(ev) {
-		console.log("coder hover");
-		console.dir(ev);
+		//console.log("coder hover");
+		//console.dir(ev);
 
 		var data = this.model.get("data");
 		var coder = null;
@@ -490,8 +490,8 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 	},
 
 	onHoverExit: function(ev) {
-		console.log("coder hover exit");
-		console.dir(ev);
+		//console.log("coder hover exit");
+		//console.dir(ev);
 
 		this.renderHoverHilight();
 	}
@@ -525,7 +525,7 @@ IRA.Views.Overall.LayerView = Backbone.View.extend({
 	},
 
 	toggleVis: function() {
-		console.log('togglevis');
+		//console.log('togglevis');
 		var cur = this.model.get('visible');
 
 		this.model.set({visible: !cur});
@@ -541,7 +541,7 @@ IRA.Views.Overall.LayerView = Backbone.View.extend({
 	},
 
 	toggleSpotlight: function() {
-		console.log('toggleSpotlight');
+		//console.log('toggleSpotlight');
 		var cur = this.model.get("spotlight");
 
 		this.model.set({spotlight: !cur});
@@ -570,7 +570,7 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 	},
 
 	render: function() {
-		console.log('coderlist render');
+		//console.log('coderlist render');
 		var html = _.template($("#templ-layerlist").html());
 		$(this.el).html(html);
 
@@ -597,13 +597,13 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 
 		list.forEach(function(d){
 			$('#graph g.data[data-pair="' + d + '"]').attr('class', 'data hover-hilight');
-			console.log($('.hover-hilight').first());
+			//console.log($('.hover-hilight').first());
 		});
 	},
 
 	onHover: function(ev) {
-		console.log("coder hover");
-		console.dir(ev);
+		//console.log("coder hover");
+		//console.dir(ev);
 
 		//var data = this.model.get("data");
 		var coder = null;
@@ -619,7 +619,7 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 			if(coderItem) {
 				this.renderHoverHilight(coderItem.get("pairs"));
 			}
-			
+
 		}
 		
 	},
@@ -629,8 +629,8 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 	},
 
 	onCollectionChanged: function(ev) {
-		console.log('coderlist2::onCollectionChanged');
-		console.dir(ev);
+		//console.log('coderlist2::onCollectionChanged');
+		//console.dir(ev);
 
 		// not currently necessary as we always  reset it
 		//this.render();
@@ -652,7 +652,7 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 			});
 
 			if(spotlight === true) {
-				$('g[data-pair]').attr("opacity", 0.1);
+				$('g[data-pair]').attr("opacity", 0.15);
 				// reset opacity
 				pairs.forEach(function(d) {
 					$("g[data-pair=" + d + "]").attr("opacity", 1);
@@ -668,7 +668,7 @@ IRA.Views.Overall.CoderList2 = Backbone.View.extend({
 	},
 
 	onCollectionReset: function(ev) {
-		console.log('coderlist2::onCollectionReset');
+		//console.log('coderlist2::onCollectionReset');
 		this.render();
 	}
 

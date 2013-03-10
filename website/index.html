@@ -13,6 +13,7 @@
 		<script type="text/javascript" src="js/spin_helper.js"></script>
 		<!-- app -->
 		<script type="text/javascript" src="js/bb_hack.js"></script>
+		<script type="text/javascript" src="js/utils.js"></script>
 		<script type="text/javascript" src="js/app/models.js"></script>
 		<script type="text/javascript" src="js/app/overall_views.js"></script>
 		<script type="text/javascript" src="js/app/user_views.js"></script>
@@ -50,43 +51,53 @@
 				var overall_sum = 0;
 				var overall_cnt = 0;
 
-
+				// MASTER LOOP (because, what other name would be so vague yet so awesome?)
+				// 
+				// calculated in this loop
+				// 1. min/max timerange
+				// 2. min/max line number
+				// 3. 
 				data.forEach(function(d,i){
 					var point_sum = 0;
 					var point_cnt = 0;
 					var linenum = 0;
 					for(var pair in d3.values(possible_pairs)) {
 						var pair_name = possible_pairs[pair];
-						var value = d[pair_name];
+						var value_str = d[pair_name]
+						var value = +value_str;
 
 						linenum = +d.id;
 
+						// calculate min/max time & line numbers
 						timerange[0] = Math.min(timerange[0],Date.parse(d.time));
 						timerange[1] = Math.max(timerange[1],Date.parse(d.time));
 						range[0] = Math.min(range[0], linenum);
 						range[1] = Math.max(range[1], linenum);
-						if(pair_name in d && value != undefined && value != null && value != "") {
+
+						// if pairname is valid and in our data
+						if(pair_name in d && value_str != undefined && value_str != null && value_str != "") {
 							if(!(linenum in bins)) {
 								bins[linenum] = {};
 							}
-							bins[linenum][pair_name] = +value;
+							bins[linenum][pair_name] = value;
 
 							// point data
 							point_cnt++;
-							point_sum += +value;
+							point_sum += value;
 
 							// pair data
+							/*
 							if(!(pair_name in pair_data)) {
 								pair_data[pair_name] = {
-									cnt: 0,
-									sum: 0,
+									cnt: 1,
+									sum: value,
 									avg: 0,
 									stddev: 0
 								}
-							}
-
-							pair_data[pair_name].cnt++;
-							pair_data[pair_name].sum+= +value;
+							} else {
+								pair_data[pair_name].cnt++;
+								pair_data[pair_name].sum+= value;
+							}*/
 
 							// check if our data is in the pair already
 							if(!(pair_name in res.data)){
@@ -94,7 +105,7 @@
 							}
 
 							//res[pair_name][d.time] = d[pair_name];
-							res.data[pair_name][linenum] = d[pair_name];
+							res.data[pair_name][linenum] = value;
 
 							// histogram
 							if( !(value in histogram)) {
@@ -102,7 +113,7 @@
 							}
 							histogram[value]++;
 
-							overall_sum += +value;
+							overall_sum += value;
 							overall_cnt++;
 
 						}
@@ -112,13 +123,16 @@
 					var point_var = 0;
 					for(var pair in d3.values(possible_pairs)) {
 						var pair_name = possible_pairs[pair];
-						var value = d[pair_name];
+						var value = +d[pair_name];
 						if(pair_name in d && value != undefined && value != null && value != "") {
 							var diff = value - point_avg;
-							point_var += diff * diff;
+							point_var += Math.pow(diff,2);
 						}
 					}
+					point_var /= point_cnt;
 					var point_sd = Math.sqrt(point_var);
+
+					//console.log('point sd: ' + point_sd);
 
 					point_details[linenum] = {
 						sum: point_sum,
@@ -130,6 +144,62 @@
 
 				});
 
+				//console.log('calcing pair_data');
+				for(var pair in res.data) {
+					var values = d3.values(res.data[pair]);
+					var pair_extent = d3.extent(values);
+					var pair_sum = d3.sum(values);
+					var pair_avg = pair_sum / values.length;
+
+					//console.log(Utils.Math.trunc(pair_avg,2));
+
+					pair_data[pair] = {
+						cnt: values.length,
+						sum: pair_sum,
+						avg: pair_avg,
+						variance: 0,
+						stddev: 0,
+						min: pair_extent[0],
+						max: pair_extent[1]
+					};
+
+					var ssq = 0;
+					for(var i = 0; i < values.length; i++ ) {
+						ssq += Math.pow((values[i] - pair_avg),2);
+					}
+					pair_data[pair].variance = ssq / values.length;
+					pair_data[pair].stddev = Utils.Math.trunc(Math.sqrt(ssq/values.length),2);
+					//console.dir(pair_data[pair]);
+				}
+
+
+				// loop back through and calculate the means, s^2, and s of the pairs
+				// 
+				/*
+				data.forEach(function(d,i){
+					var linenum = 0;
+					for(var pair in d3.values(possible_pairs)) {
+						var pair_name = possible_pairs[pair];
+						var value_str = d[pair_name]
+						var value = +value_str;
+
+						linenum = +d.id;
+
+						// if pairname is valid and in our data
+						if(pair_name in d && value_str != undefined && value_str != null && value_str != "") {
+							if(!(linenum in bins)) {
+								bins[linenum] = {};
+							}
+
+						}
+
+					}
+
+				});
+				*/
+
+
+
 				res.extra['timerange'] = timerange;
 				res.extra['range'] = range;
 				res.extra['histogram'] = histogram;
@@ -137,6 +207,7 @@
 				res.extra['pair_data'] = pair_data;
 				res.extra['point_data'] = point_details;
 
+				/*
 				console.log("after transform");
 				console.dir(res);
 				console.log('bins');
@@ -145,6 +216,7 @@
 				console.log('overall_sum: ' + overall_sum);
 				console.log('overall_cnt: ' + overall_cnt);
 				console.log('overall average: ' + (overall_sum / overall_cnt));
+				*/
 				return res;
 			}
 
@@ -169,54 +241,70 @@
 			}
 
 
+			//
+			// build OverallNest
+			// 
+			function groupOverallDataByYearAndDate(data) {
+				var format = d3.time.format("%Y-%m-%d %H:%M:%S");
+				var dayFormat = d3.time.format("%Y-%m-%d");
+
+				dataMap = d3.nest()
+					.key(function(d){
+						return ((new Date(format.parse(d.time))).getYear() + 1900);
+					})
+					.key(function(d){ 
+						fulldate = new Date(format.parse(d.time));
+						date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
+						return dayFormat(date); 
+					})
+					.entries(data);
+
+				console.log("dataMap");
+				console.dir(dataMap);
+
+				console.dir(d3.keys(dataMap));
+			}
+
+
+			//
+			// parses out all possible pair combinations from the header of the overall_csv file
+			//
+			function parsePossiblePairs(data) {
+				possible_pairs = Object.keys(data[0]);
+				possible_pairs = possible_pairs.filter(function(d){
+					return (d.indexOf('-') != -1);
+				});
+				console.dir(possible_pairs);
+			}
 
 			//
 			// ready
 			//
 			$(document).ready(function() {  
-
-				format = d3.time.format("%Y-%m-%d %H:%M:%S");
-				dayFormat = d3.time.format("%Y-%m-%d");
-
 				var spinner = $('body').spin("small");
 
-				d3.csv("data/15line.csv", function(csv) {
-					console.log('got csv!');
-					console.dir(csv);
-					data = csv;
+				d3.csv("data/15line.csv", function(overall_data) {
+					d3.csv("data/codes.csv", function(csv2){
+						d3.csv("data/users15.csv", function(csv3) {
+							console.log('got csvs!');
+							console.dir(overall_data);
+							console.dir(csv2);
+							console.dir(csv3);
 
-					dataMap = d3.nest()
-						.key(function(d){
-							return ((new Date(format.parse(d.time))).getYear() + 1900);
-						})
-						.key(function(d){ 
-						fulldate = new Date(format.parse(d.time));
-						date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
-							return dayFormat(date); 
-						})
-						.entries(data);
+							// group the overall data by year and date
+							groupOverallDataByYearAndDate(overall_data);
 
-					console.log("dataMap");
-					console.dir(dataMap);
+							// grab our possible pairs
+							parsePossiblePairs(overall_data);
 
-					//dataMap = dataMap.map();
+							// Start our application
+							router = new IRA.IRAApp();
 
-					console.dir(d3.keys(dataMap));
+							// 
+							spinner.spin(false);
 
-					// grab our possible pairs
-					possible_pairs = Object.keys(csv[0]);
-					possible_pairs = possible_pairs.filter(function(d){
-						return (d.indexOf('-') != -1);
+						});
 					});
-					console.dir(possible_pairs);
-
-
-					// router
-					router = new IRA.IRAApp();
-
-					// 
-					spinner.spin(false);
-
 				});
 
 			});
@@ -256,14 +344,6 @@
 			<div id="sp-details"></div>
 			<h4>Coders</h4>
 			<div class="scrolllist" id="sp-coderlist">
-				<div id="coder-list-header" class="coder-line">
-					<div><i class="icon-eye-close"></i></div>
-					<div><i class="icon-star"></i></div>
-					<div>#</div>
-					<div>Mean</div>
-				</div>
-				<ul id="sp-coders">
-				</ul>
 			</div>
 		</div>	
 	</script>
@@ -273,15 +353,7 @@
 			<h4>Details</h4>
 			<div id="sp-details"></div>
 			<h4>Coders</h4>
-			<div class="scrolllist">
-				<div id="coder-list-header" class="coder-line">
-					<div><i class="icon-eye-close"></i></div>
-					<div><i class="icon-star"></i></div>
-					<div>#</div>
-					<div>Mean</div>
-				</div>
-				<ul id="sp-coders">
-				</ul>
+			<div class="scrolllist" id="user-list">
 			</div>
 		</div>	
 	</script>
