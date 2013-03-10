@@ -663,6 +663,10 @@ for row in results:
 # write out basic user agrement
 useragreementcalc = UserAgreementCalculator(segmenter.segments)
 results = useragreementcalc.CalcAgreementBySegments()
+
+aggr = AverageAggregator(results,args.binsize, args.minbinentries, args.maxbinskip)
+results = aggr.bin()
+
 fieldnames = ['id','time']
 for k in range(1,22):
 	fieldnames.append(k)
