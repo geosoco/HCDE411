@@ -122,6 +122,12 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 			}
 		});
 
+		d3.entries(coders).forEach(function(d,i){
+			coders[d.key].avg = d3.mean(d.value.entries, function(d2) { return +d2.value; } )
+		});
+
+
+
 		// set up return structure
 		res = {
 				data: coders,
@@ -197,7 +203,7 @@ IRA.Views.Users.SidePanel = Backbone.View.extend({
 					return {
 						id: +d.key,
 						name: +d.key,
-						details: 0,
+						details: Utils.Math.trunc(+d.value.avg,2),
 						pairs: [+d.key]
 					}
 				});
