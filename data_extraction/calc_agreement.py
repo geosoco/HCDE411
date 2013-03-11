@@ -643,7 +643,7 @@ print pretty([r['id'] for r in results])
 print "aggregating %d lines with %d minimum values to be included"%(args.binsize, args.minbinentries)
 
 aggr = AverageAggregator(results,args.binsize, args.minbinentries, args.maxbinskip)
-results = aggr.bin()
+results = sorted(aggr.bin(), key=lambda x: x['id'])
 
 # write out basic pair agreement
 fieldnames = ['id','time']
@@ -665,7 +665,7 @@ useragreementcalc = UserAgreementCalculator(segmenter.segments)
 results = useragreementcalc.CalcAgreementBySegments()
 
 aggr = AverageAggregator(results,args.binsize, args.minbinentries, args.maxbinskip)
-results = aggr.bin()
+results = sorted(aggr.bin(), key=lambda x: x['id'])
 
 fieldnames = ['id','time']
 for k in range(1,22):
