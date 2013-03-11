@@ -39,6 +39,19 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 
 	}, 
 
+	onClose: function() {
+		//this.listenTo(this.model, "change:date", this.dateChanged );
+		// this.listenTo(this.model, "change:year", this.yearChanged );
+
+		this.model.unbind("change:date", this.dateChanged );
+		this.model.unbind("change:year", this.yearChanged );
+
+		this.yearSelectView.close();
+		//this.sessionDatesView.close();
+		this.graph.close();
+		this.sidePanel.close();
+	},
+
 
 
 	render: function() {
@@ -118,18 +131,7 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 		};
 	},
 
-	onClose: function() {
-		//this.listenTo(this.model, "change:date", this.dateChanged );
-		// this.listenTo(this.model, "change:year", this.yearChanged );
-
-		this.model.unbind("change:date", this.dateChanged );
-		this.model.unbind("change:year", this.yearChanged );
-
-		this.yearSelectView.close();
-		//this.sessionDatesView.close();
-		this.graph.close();
-		this.sidePanel.close();
-	}
+	
 
 });
 

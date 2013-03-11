@@ -26,6 +26,8 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		console.log('userview-init');
 
 		this.listenTo(this.model, "change:date", this.dateChanged );
+		//this.listenTo(this.model, "change:year", this.yearChanged );
+
 
 		this.render();
 
@@ -35,6 +37,17 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		this.sidePanel = new IRA.Views.Users.SidePanel({ el: "#sidepanel", model: this.model });
 		
 	}, 
+
+	onClose: function() {
+		this.model.unbind("change:date", this.dateChanged );
+		//this.model.unbind("change:year", this.yearChanged );
+
+		this.yearSelectView.close();
+		this.sessionDatesView.close();
+		this.graph.close();
+		this.sidePanel.close();
+	},
+
 
 	render: function() {
 		var template = _.template($("#templ-users").html());
@@ -51,10 +64,77 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
 		var selected_values = data.values;
 
-		sessionData = transformPairs(selected_values);
+		var sessionData = this.processData(data);
 
-		this.model.set({data: sessionData});
+		//sessionData = transformPairs(selected_values);
+
+		this.model.set({user_view_data: sessionData});
+	},
+
+
+	processData: function(data) {
+		var res = {};
+		var coders = {};
+
+		var dateExtent = [Number.MAX_VALUE, Number.MIN_VALUE];
+		var lineExtent = [Number.MAX_VALUE, Number.MIN_VALUE];
+
+		data.values.forEach(function(d,i){
+
+			var lineId = d['id'];
+			var time = Date.parse(d['time']);
+
+			dateExtent[0] = Math.min(dateExtent[0], +time);
+			dateExtent[1] = Math.max(dateExtent[1], +time);
+
+			lineExtent[0] = Math.min(lineExtent[0], +lineId);
+			lineExtent[1] = Math.max(lineExtent[1], +lineId);
+
+			// run through each column of each object
+			for(var col in d) {
+				// skip non-coder columns
+				if(!col || col.toLowerCase() == "id" || col.toLowerCase() == "time" ) {
+					continue;
+				}
+
+				var value = d[col];
+
+				// if the cell isn't empty
+				if(value && value.length > 0) {
+					// add it to our coders list as necessary
+					if(!(col in coders)) {
+						coders[col] = {
+							id: col,
+							entries: [{
+								time: time,
+								id: lineId,
+								value: value 
+							}],
+						}
+					} else {
+						coders[col].entries.push({
+							time: time,
+							id: lineId,
+							value: value
+						});
+					}
+				}
+			}
+		});
+
+		// set up return structure
+		res = {
+				data: coders,
+				extra: {
+					coders: d3.keys(coders),
+					range: lineExtent
+				}
+			}
+
+
+		return res;
 	}
+
 
 });
 
@@ -93,21 +173,21 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 	initialize: function() {
 		//console.log('mainview-init');
 
-		this.listenTo(this.model, "change:data", this.dataChanged );
+		this.listenTo(this.model, "change:user_view_data", this.dataChanged );
 
 		this.render();
 	}, 
 
 	onClose: function() {
 		//console.log('mainview-overall-close');
-		this.model.unbind("change:data", this.dataChanged);
+		this.model.unbind("change:user_view_data", this.dataChanged);
 	},
 
 	render: function() {
-		var data = this.model.get("data");
+		var data = this.model.get("user_view_data");
 
 		if(data) {
-			this.drawData(this.model.get("data"));	
+			this.drawData(data);	
 		}
 		
 	},
@@ -188,7 +268,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		}
 
 		var mapped_pairs = $.map(data.data,function(v,k) {
-				return {value: v, pair: k}; 
+				return {value: v.entries, pair: k}; 
 			});
 
 
@@ -219,7 +299,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 			.data(function(d){
 			//console.dir(d);
 				return [$.map(d.value,function(v,k){
-					return {value: v, time: k}; 
+					return {value: +v.value, time: v.id}; 
 				})];
 			});
 
@@ -241,9 +321,9 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 	dataChanged: function(ev) {
 		//console.log("dataChanged");
 		//console.dir(ev);
-		var modelData
+		//var modelData
 
-		this.data = 
+		//this.data = 
 
 		this.render();
 
