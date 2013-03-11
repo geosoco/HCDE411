@@ -40,14 +40,10 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 	}, 
 
 	onClose: function() {
-		//this.listenTo(this.model, "change:date", this.dateChanged );
-		// this.listenTo(this.model, "change:year", this.yearChanged );
-
 		this.model.unbind("change:date", this.dateChanged );
 		this.model.unbind("change:year", this.yearChanged );
 
 		this.yearSelectView.close();
-		//this.sessionDatesView.close();
 		this.graph.close();
 		this.sidePanel.close();
 	},
@@ -118,6 +114,10 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 
 				var extent = d3.extent(d.values, function(d2){
 					return +d2.values[0].date;
+				});
+
+				d.avg = d3.mean(d.values, function(d2){
+					return +d2.values[0].percent;
 				});
 
 				dateExtent[0] = Math.min(extent[0], dateExtent[0]);
@@ -196,7 +196,7 @@ IRA.Views.Codes.SidePanel = Backbone.View.extend({
 					return {
 						id: +d.key,
 						name: +d.key,
-						details: 0,
+						details: Utils.Math.trunc(+d.avg,2),
 						pairs: [+d.key]
 					}
 				});
