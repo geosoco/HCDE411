@@ -25,19 +25,111 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 	initialize: function() {
 		console.log('Codesview-init');
 
+		this.listenTo(this.model, "change:date", this.dateChanged );
+		this.listenTo(this.model, "change:year", this.yearChanged );
+
 		this.render();
 
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 
-		//this.graph = new IRA.Views.Codes.Graph({el: "#graph", model: this.model });
-		//this.sidePanel = new IRA.Views.Codes.SidePanel({ el: "#sidepanel", model: this.model });
+		this.graph = new IRA.Views.Codes.Graph({el: "#graph", model: this.model });
+		this.sidePanel = new IRA.Views.Codes.SidePanel({ el: "#sidepanel", model: this.model });
 		
+		this.model.set({year: '2012', yearIdx: 0 });
+
 	}, 
+
+
 
 	render: function() {
 		var template = _.template($("#templ-codes").html());
 		this.$el.html( template );
 	},
+
+	// handles grabbing appropriate data when the date changes
+	// needs to be here because sessionSelect is a shared view, and this handles the mode
+	// specific stuff
+	dateChanged: function(ev) {
+		console.log('overall.mainview.datechanged');
+
+		var date = this.model.get("date");
+		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
+		var selected_values = data.values;
+
+		var extra_data = this.processData(selected_values);
+
+		//sessionData = transformPairs(selected_values);
+		var new_data = {
+			data: selected_values,
+			extra: extra_data
+		}
+
+		this.model.set({data: selected_values});
+	},
+
+	yearChanged: function(ev) {
+		console.log('yearchanged: ' + ev.attributes['yearIdx']);
+
+		var yearIdx = ev.attributes['yearIdx'];
+		var modeData = this.model.get('modeData');
+
+		if(modeData) {
+			var selected_values = modeData[yearIdx].values;
+
+			var extra_data = this.processData(selected_values);
+
+			//sessionData = transformPairs(selected_values);
+			var new_data = {
+				data: selected_values,
+				extra: extra_data
+			};
+
+			this.model.set({code_view_data: new_data });
+
+		}
+
+	},
+
+	processData: function(data) {
+		var data2 = this.model.get("data"); 
+		var dayFormat = d3.time.format("%Y-%m-%d")
+
+		var dateExtent = [Number.MAX_VALUE, Number.MIN_VALUE];
+
+
+		if(data) {
+			data.forEach(function(d,i){
+				d.values.forEach(function(d2){
+					d2.values[0].date = dayFormat.parse(d2.values[0].day);
+				});
+
+				var extent = d3.extent(d.values, function(d2){
+					return +d2.values[0].date;
+				});
+
+				dateExtent[0] = Math.min(extent[0], dateExtent[0]);
+				dateExtent[1] = Math.max(extent[1], dateExtent[1]);
+			});
+		}
+
+		return {
+			range: dateExtent,
+			codes: data.map(function(d){ return d.key; })
+		};
+	},
+
+	onClose: function() {
+		//this.listenTo(this.model, "change:date", this.dateChanged );
+		// this.listenTo(this.model, "change:year", this.yearChanged );
+
+		this.model.unbind("change:date", this.dateChanged );
+		this.model.unbind("change:year", this.yearChanged );
+
+		this.yearSelectView.close();
+		//this.sessionDatesView.close();
+		this.graph.close();
+		this.sidePanel.close();
+	}
 
 });
 
@@ -55,9 +147,70 @@ IRA.Views.Codes.SidePanel = Backbone.View.extend({
 
 	initialize: function() {
 
+		this.listenTo(this.model, "change:code_view_data", this.dataChanged );
+
+		this.layers = new IRA.Models.LayerCollection({});
+		this.createLayers();
+
+
+		//this.transformBaseData(data);
+		//this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
+		//this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
+		//this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
+		this.coderlist = new IRA.Views.LayerView({el: "#sp-codelist", collection: this.layers });
+
+
 	},
 
+	onClose: function() {
+		this.model.unbind("change:code_view_data", this.dataChanged);
+	},
+
+
 	render: function() {
+
+	},
+
+	dataChanged: function(ev) {
+		//console.log("OverallSidePanel: dataChanged");
+		//console.dir(ev);
+
+		var baseData = this.model.get("code_view_data");
+		//this.transformBaseData(baseData);
+		this.createLayers();
+
+		//this.stats.render();
+	},
+
+	createLayers: function() {
+
+		if(this.model) {
+			var data = this.model.get("code_view_data");
+
+			if(typeof data != "undefined" && data != null) {
+				var html = "";
+
+				var code_array = data.data.map(function(d,i){
+					return {
+						id: +d.key,
+						name: +d.key,
+						details: 0,
+						pairs: [+d.key]
+					}
+				});
+
+
+				this.layers.reset(code_array);
+
+				this.codes = code_array;
+
+
+			} else {
+				this.layers.reset([]);
+			}
+		} else {
+			this.layers.reset([]);
+		}
 
 	}
 });
@@ -69,7 +222,7 @@ IRA.Views.Codes.SidePanel = Backbone.View.extend({
 //
 //
 
-IRA.Views.Users.Graph = Backbone.View.extend({
+IRA.Views.Codes.Graph = Backbone.View.extend({
 	events: {
 
 	},
@@ -77,21 +230,21 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 	initialize: function() {
 		//console.log('mainview-init');
 
-		this.listenTo(this.model, "change:data", this.dataChanged );
+		this.listenTo(this.model, "change:code_view_data", this.dataChanged );
 
 		this.render();
 	}, 
 
 	onClose: function() {
 		//console.log('mainview-overall-close');
-		this.model.unbind("change:data", this.dataChanged);
+		this.model.unbind("change:code_view_data", this.dataChanged);
 	},
 
 	render: function() {
-		var data = this.model.get("data");
+		var data = this.model.get("code_view_data");
 
 		if(data) {
-			this.drawData(this.model.get("data"));	
+			this.drawData(data);	
 		}
 		
 	},
@@ -115,7 +268,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		this.y_scale.domain( [100.0, 0] )
 			.range( [0,graphHeight] );
 
-		this.x_scale = this.x_scale || d3.scale.linear();
+		this.x_scale = this.x_scale || d3.time.scale();
 		this.x_scale.domain( data.extra['range'] )
 			.range([0,graphWidth]);
 
@@ -138,10 +291,10 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		this.line = d3.svg.line()
 			.interpolate("linear")
 			.x(function(d) { 
-				return self.x_scale(+d.time); 
+				return self.x_scale(d.value.date); 
 			})
 			.y(function(d) { 
-				return self.y_scale(+d.value); 
+				return self.y_scale(+d.value.percent); 
 			});
 
 		//
@@ -172,7 +325,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		}
 
 		var mapped_pairs = $.map(data.data,function(v,k) {
-				return {value: v, pair: k}; 
+				return {value: v.values, code: v.key}; 
 			});
 
 
@@ -181,14 +334,14 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 
 		var groups = this.svg.selectAll("g.data")
 			.data(mapped_pairs, function(d){
-				return d.pair;
+				return d.code;
 			});
 
 		groups.enter().append("g")
 			.attr("opacity",0)
 			.attr("class", "data")
-			.attr("data-pair", function(d){
-				return d.pair;
+			.attr("data-layer-id", function(d){
+				return d.code;
 			})
 			.attr("transform", function(d) {
 				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
@@ -203,7 +356,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 			.data(function(d){
 			//console.dir(d);
 				return [$.map(d.value,function(v,k){
-					return {value: v, time: k}; 
+					return {value: v.values[0], time: v.key}; 
 				})];
 			});
 

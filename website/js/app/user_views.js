@@ -25,6 +25,8 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 	initialize: function() {
 		console.log('userview-init');
 
+		this.listenTo(this.model, "change:date", this.dateChanged );
+
 		this.render();
 
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
@@ -38,6 +40,21 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		var template = _.template($("#templ-users").html());
 		this.$el.html( template );
 	},
+
+	// handles grabbing appropriate data when the date changes
+	// needs to be here because sessionSelect is a shared view, and this handles the mode
+	// specific stuff
+	dateChanged: function(ev) {
+		console.log('overall.mainview.datechanged');
+
+		var date = this.model.get("date");
+		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
+		var selected_values = data.values;
+
+		sessionData = transformPairs(selected_values);
+
+		this.model.set({data: sessionData});
+	}
 
 });
 
@@ -224,6 +241,9 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 	dataChanged: function(ev) {
 		//console.log("dataChanged");
 		//console.dir(ev);
+		var modelData
+
+		this.data = 
 
 		this.render();
 

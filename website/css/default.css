@@ -94,6 +94,16 @@ path.line:hover {
   font-size: 10px;
 }
 
+#sessions rect {
+  stroke: #000;
+  stroke-width: 2px;
+  shape-rendering: crispEdges;
+}
+
+#sessions rect.selected {
+  stroke: #f00;
+}
+
 
 #main-view {
   height: 400px;

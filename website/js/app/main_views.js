@@ -124,6 +124,7 @@ IRA.Views.YearSelect = Backbone.View.extend({
 		$('li', this.$el).attr('class','');
 		$(ev.target).parent().attr('class','active');
 
+		// we've handled this click, don't modify the URL (which screws things up a lot)
 		return false;
 	}
 });
@@ -135,7 +136,7 @@ IRA.Views.YearSelect = Backbone.View.extend({
 //
 IRA.Views.SessionDatesView = Backbone.View.extend({
 	events: {
-		"click rect": "selchanged"
+		"click rect": "onSessionClicked"
 	},
 
 	sessionSVG: null,
@@ -169,7 +170,7 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 
 				// build our scale
 				this.x_scale = this.x_scale || d3.scale.ordinal()
-						.rangeRoundBands([0,width],0);
+						.rangeRoundBands([2,width],0);
 
 				this.x_scale.domain(this.data.values.map(function(d2) { return d2.key; }))
 						
@@ -253,13 +254,23 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 		//console.log('session Changed');
 		//console.dir(ev);
 
-		var date = this.model.get("date");
-		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
-		var selected_values = data.values;
+		$('rect', this.$el).attr('class', function(i,attr){
+			return attr.replace('selected','');
+		});
 
-		sessionData = transformPairs(selected_values);
+		var date = this.model.get('date');
+		var sel = $('rect[data-date="' + date + '"]', this.$el);
+		var curClass = sel.attr('class');
+		sel.attr('class', curClass + ' selected');
 
-		this.model.set({data: sessionData});
+
+		//var date = this.model.get("date");
+		//var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
+		//var selected_values = data.values;
+
+		//sessionData = transformPairs(selected_values);
+
+		//this.model.set({data: selected_values});
 
 		//drawData(sessionData);
 		//drawHistogram("#histogram", sessionData.extra.histogram);
@@ -267,21 +278,26 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 	},
 
 
-	selchanged: function(ev) {
+	onSessionClicked: function(ev) {
 		//console.log('clicky2');
 		//console.dir(ev);
 
+		var selectedDate = $(ev.srcElement).attr('data-date');
+		this.model.set({date: selectedDate });
+
+
 		var data = d3.select(ev.srcElement).datum();
 
-		var selected_date = data.key;
-		var selected_values = data.values;
+
+		//var selected_date = data.key;
+		//var selected_values = data.values;
 
 		
 		//console.dir(ev);
 		//console.dir("clicked " + data.key);
 
-		sessionData = transformPairs(selected_values);
-		this.model.set({data: sessionData});
+		//sessionData = transformPairs(selected_values);
+		//this.model.set({data: sessionData});
 		/*
 		drawData(sessionData);
 		drawHistogram("#histogram", sessionData.extra.histogram);
@@ -496,6 +512,183 @@ IRA.Views.LineGraph = Backbone.View.extend({
 	dataChanged: function() {
 		//console.log('linegraph: dataChanged');
 
+		this.render();
+	}
+
+});
+
+
+//
+//
+//
+//
+//
+IRA.Views.LayerItemView = Backbone.View.extend({
+	tagName: "li",
+
+	events: {
+		"click .vis-toggle": 				"toggleVis",
+		"click .spotlight-toggle": 			"toggleSpotlight"
+	},
+
+	initialize: function() {
+		this.listenTo(this.model, "change", this.render )
+	},
+
+	render: function() {
+
+		this.$el.html(_.template($("#templ-layerlistitem").html(), this.model.attributes));
+		this.$el.addClass("layer-item");
+		this.$el.attr('data-layerid', this.model.get('id'));
+
+		return this;
+	},
+
+	toggleVis: function() {
+		//console.log('togglevis');
+		var cur = this.model.get('visible');
+
+		this.model.set({visible: !cur});
+
+		var pairs = this.model.get('pairs');
+		if(pairs) {
+			pairs.forEach(function(d,i){
+				$("g[data-layer-id=" + d + "]").attr('display', (!cur) ? "" : "none" );
+			});
+			
+		}
+		
+	},
+
+	toggleSpotlight: function() {
+		//console.log('toggleSpotlight');
+		var cur = this.model.get("spotlight");
+
+		this.model.set({spotlight: !cur});
+	}
+
+});
+
+
+//
+//
+//
+//
+//
+IRA.Views.LayerView = Backbone.View.extend({
+	events: {
+		"hover .layer-item": 			"onHover", 
+		"mouseout .layer-item": 	"onHoverExit",
+	},
+
+	initialize: function() {
+		this.listenTo(this.collection, "change", this.onCollectionChanged );
+		this.listenTo(this.collection, "reset", this.onCollectionReset );
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+
+		//this.render();
+	},
+
+	render: function() {
+		//console.log('coderlist render');
+		var html = _.template($("#templ-layerlist").html());
+		$(this.el).html(html);
+
+		this.addAll();
+	},
+
+	addOne: function(item) {
+		var view = new IRA.Views.LayerItemView({model: item});
+		this.$("ul", this.el).append(view.render().el);
+	},
+
+	addAll: function() {
+		this.collection.each(this.addOne, this);
+	},
+
+	renderHoverHilight: function(list) {
+		// remove hilight 
+		$('#graph g.data').attr('class', 'data');
+
+		// skip out if no coder specified
+		if(typeof list == "undefined" || list == null || list.length == 0) {
+			return;
+		}
+
+		list.forEach(function(d){
+			$('#graph g.data[data-layer-id="' + d + '"]').attr('class', 'data hover-hilight');
+			//console.log($('.hover-hilight').first());
+		});
+	},
+
+	onHover: function(ev) {
+		//console.log("coder hover");
+		//console.dir(ev);
+
+		//var data = this.model.get("data");
+		var coder = null;
+		if(ev.srcElement.tagName.toUpperCase() == "LI") {
+			coder = $(ev.srcElement).attr('data-layerid');
+		} else {
+			coder = $(ev.srcElement).parent('li').attr('data-layerid');
+		}
+		
+		if(coder) {
+			var coderItem = this.collection.get(+coder);
+
+			if(coderItem) {
+				this.renderHoverHilight(coderItem.get("pairs"));
+			}
+
+		}
+		
+	},
+
+	onHoverExit: function(ev) {
+
+	},
+
+	onCollectionChanged: function(ev) {
+		//console.log('coderlist2::onCollectionChanged');
+		//console.dir(ev);
+
+		// not currently necessary as we always  reset it
+		//this.render();
+
+		// disable the other items
+
+		// deal with spotlight events
+		if(ev && ev.changed && 'spotlight' in ev.changed ) {
+			var spotlight = ev.changed.spotlight;
+
+			var pairs = ev.attributes.pairs;
+
+
+			// shut off any other item that is spotlighted
+			this.collection.each(function(d){
+				if(d.attributes.id != ev.attributes.id && d.attributes.spotlight === true) {
+					d.set({spotlight: false}, {silent: true});
+				}
+			});
+
+			if(spotlight === true) {
+				$('g[data-layer-id]').attr("opacity", 0.15);
+				// reset opacity
+				pairs.forEach(function(d) {
+					$("g[data-layer-id=" + d + "]").attr("opacity", 1);
+				});
+			} else {
+				pairs.forEach(function(d,i){
+					$("g[data-layer-id]").attr("opacity", 1);
+				});
+			}
+		}
+
+		this.render();
+	},
+
+	onCollectionReset: function(ev) {
+		//console.log('coderlist2::onCollectionReset');
 		this.render();
 	}
 

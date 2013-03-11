@@ -25,6 +25,7 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 
 	initialize: function() {
 		//console.log('mainview-init');
+		this.listenTo(this.model, "change:date", this.dateChanged );
 
 		this.render();
 
@@ -35,10 +36,35 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 		
 	}, 
 
+	onClose: function() {
+		this.model.unbind("change:date", this.dateChanged );
+
+		this.yearSelectView.close();
+		this.sessionDatesView.close();
+		this.graph.close();
+		this.sidePanel.close();
+	},
+
 	render: function() {
 		var template = _.template($("#templ-main").html());
 		this.$el.html( template );
 	},
+
+	// handles grabbing appropriate data when the date changes
+	// needs to be here because sessionSelect is a shared view, and this handles the mode
+	// specific stuff
+	dateChanged: function(ev) {
+		console.log('overall.mainview.datechanged');
+
+		var date = this.model.get("date");
+		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
+		var selected_values = data.values;
+
+		sessionData = transformPairs(selected_values);
+
+		this.model.set({data: sessionData});
+	},
+
 
 
 });
@@ -168,7 +194,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 		groups.enter().append("g")
 			.attr("opacity",0)
 			.attr("class", "data")
-			.attr("data-pair", function(d){
+			.attr("data-layer-id", function(d){
 				return d.pair;
 			})
 			.attr("transform", function(d) {
@@ -245,7 +271,7 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
 		this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
 		//this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
-		this.coderlist = new IRA.Views.Overall.CoderList2({el: "#sp-coderlist", collection: this.layers });
+		this.coderlist = new IRA.Views.LayerView({el: "#sp-coderlist", collection: this.layers });
 	},
 
 	onClose: function() {
@@ -470,7 +496,7 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 		}
 
 		list.forEach(function(d){
-			$('#graph g.data[data-pair="' + d + '"]').attr('class', 'data hover-hilight');
+			$('#graph g.data[data-layer-id="' + d + '"]').attr('class', 'data hover-hilight');
 			//console.log($('.hover-hilight').first());
 		});
 	},
@@ -499,180 +525,5 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 
 });
 
-//
-//
-//
-//
-//
-IRA.Views.Overall.LayerView = Backbone.View.extend({
-	tagName: "li",
-
-	events: {
-		"click .vis-toggle": 				"toggleVis",
-		"click .spotlight-toggle": 			"toggleSpotlight"
-	},
-
-	initialize: function() {
-		this.listenTo(this.model, "change", this.render )
-	},
-
-	render: function() {
-
-		this.$el.html(_.template($("#templ-layerlistitem").html(), this.model.attributes));
-		this.$el.addClass("layer-item");
-		this.$el.attr('data-layerid', this.model.get('id'));
-
-		return this;
-	},
-
-	toggleVis: function() {
-		//console.log('togglevis');
-		var cur = this.model.get('visible');
-
-		this.model.set({visible: !cur});
-
-		var pairs = this.model.get('pairs');
-		if(pairs) {
-			pairs.forEach(function(d,i){
-				$("g[data-pair=" + d + "]").attr('display', (!cur) ? "" : "none" );
-			});
-			
-		}
-		
-	},
-
-	toggleSpotlight: function() {
-		//console.log('toggleSpotlight');
-		var cur = this.model.get("spotlight");
-
-		this.model.set({spotlight: !cur});
-	}
-
-});
-
-
-//
-//
-//
-//
-//
-IRA.Views.Overall.CoderList2 = Backbone.View.extend({
-	events: {
-		"hover .layer-item": 			"onHover", 
-		"mouseout .layer-item": 	"onHoverExit",
-	},
-
-	initialize: function() {
-		this.listenTo(this.collection, "change", this.onCollectionChanged );
-		this.listenTo(this.collection, "reset", this.onCollectionReset );
-		//this.listenTo(this.model, "change:data", this.dataChanged );
-
-		//this.render();
-	},
-
-	render: function() {
-		//console.log('coderlist render');
-		var html = _.template($("#templ-layerlist").html());
-		$(this.el).html(html);
-
-		this.addAll();
-	},
-
-	addOne: function(item) {
-		var view = new IRA.Views.Overall.LayerView({model: item});
-		this.$("ul", this.el).append(view.render().el);
-	},
-
-	addAll: function() {
-		this.collection.each(this.addOne, this);
-	},
-
-	renderHoverHilight: function(list) {
-		// remove hilight 
-		$('#graph g.data').attr('class', 'data');
-
-		// skip out if no coder specified
-		if(typeof list == "undefined" || list == null || list.length == 0) {
-			return;
-		}
-
-		list.forEach(function(d){
-			$('#graph g.data[data-pair="' + d + '"]').attr('class', 'data hover-hilight');
-			//console.log($('.hover-hilight').first());
-		});
-	},
-
-	onHover: function(ev) {
-		//console.log("coder hover");
-		//console.dir(ev);
-
-		//var data = this.model.get("data");
-		var coder = null;
-		if(ev.srcElement.tagName.toUpperCase() == "LI") {
-			coder = $(ev.srcElement).attr('data-layerid');
-		} else {
-			coder = $(ev.srcElement).parent('li').attr('data-layerid');
-		}
-		
-		if(coder) {
-			var coderItem = this.collection.get(+coder);
-
-			if(coderItem) {
-				this.renderHoverHilight(coderItem.get("pairs"));
-			}
-
-		}
-		
-	},
-
-	onHoverExit: function(ev) {
-
-	},
-
-	onCollectionChanged: function(ev) {
-		//console.log('coderlist2::onCollectionChanged');
-		//console.dir(ev);
-
-		// not currently necessary as we always  reset it
-		//this.render();
-
-		// disable the other items
-
-		// deal with spotlight events
-		if(ev && ev.changed && 'spotlight' in ev.changed ) {
-			var spotlight = ev.changed.spotlight;
-
-			var pairs = ev.attributes.pairs;
-
-
-			// shut off any other item that is spotlighted
-			this.collection.each(function(d){
-				if(d.attributes.id != ev.attributes.id && d.attributes.spotlight === true) {
-					d.set({spotlight: false}, {silent: true});
-				}
-			});
-
-			if(spotlight === true) {
-				$('g[data-pair]').attr("opacity", 0.15);
-				// reset opacity
-				pairs.forEach(function(d) {
-					$("g[data-pair=" + d + "]").attr("opacity", 1);
-				});
-			} else {
-				pairs.forEach(function(d,i){
-					$("g[data-pair]").attr("opacity", 1);
-				});
-			}
-		}
-
-		this.render();
-	},
-
-	onCollectionReset: function(ev) {
-		//console.log('coderlist2::onCollectionReset');
-		this.render();
-	}
-
-});
 
 

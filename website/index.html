@@ -287,11 +287,11 @@
 						return (new Date(dayFormat.parse(d.day)).getYear() + 1900);
 					})
 					.key(function(d){
-						var fulldate = new Date(dayFormat.parse(d.day));
-						return d.day;
-					})
-					.key(function(d){
 						return +d.code;
+					})					
+					.key(function(d){
+						//var fulldate = new Date(dayFormat.parse(d.day));
+						return d.day;
 					})
 					.entries(data);
 
@@ -429,7 +429,7 @@
 			<h4>Details</h4>
 			<div id="sp-details"></div>
 			<h4>Codes</h4>
-			<div class="scrolllist" id="codelist">
+			<div class="scrolllist" id="sp-codelist">
 			</div>
 		</div>	
 	</script>
