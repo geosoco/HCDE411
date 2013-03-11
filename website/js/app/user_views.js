@@ -152,11 +152,71 @@ IRA.Views.Users.SidePanel = Backbone.View.extend({
 
 	initialize: function() {
 
+		this.listenTo(this.model, "change:user_view_data", this.dataChanged );
+
+		this.layers = new IRA.Models.LayerCollection({});
+		this.createLayers();
+
+
+		//this.transformBaseData(data);
+		//this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
+		//this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
+		//this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
+		this.coderlist = new IRA.Views.LayerView({el: "#sp-userlist", collection: this.layers });
+
+
 	},
+
+	onClose: function() {
+		this.model.unbind("change:user_view_data", this.dataChanged);
+	},
+
+
 
 	render: function() {
 
+	},
+
+	dataChanged: function(ev) {
+
+		var baseData = this.model.get("user_view_data");
+		//this.transformBaseData(baseData);
+		this.createLayers();
+
+		//this.stats.render();
+	},
+
+	createLayers: function() {
+
+		if(this.model) {
+			var data = this.model.get("user_view_data");
+
+			if(typeof data != "undefined" && data != null) {
+
+				var user_array = d3.entries(data.data).map(function(d,i){
+					return {
+						id: +d.key,
+						name: +d.key,
+						details: 0,
+						pairs: [+d.key]
+					}
+				});
+
+
+				this.layers.reset(user_array);
+
+				this.users = user_array;
+
+
+			} else {
+				this.layers.reset([]);
+			}
+		} else {
+			this.layers.reset([]);
+		}
+
 	}
+
 });
 
 //
@@ -283,7 +343,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		groups.enter().append("g")
 			.attr("opacity",0)
 			.attr("class", "data")
-			.attr("data-pair", function(d){
+			.attr("data-layer-id", function(d){
 				return d.pair;
 			})
 			.attr("transform", function(d) {
