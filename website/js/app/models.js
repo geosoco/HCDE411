@@ -15,7 +15,22 @@ IRA.Models = IRA.Models || {};
 //
 IRA.Models.SelectedMode = Backbone.Model.extend({
 	defaults: {
-		mode: -1
+		mode: -1,
+		data: null,
+		overall_data: null,
+		code_data: null,
+		user_data: null
+	},
+
+	getData: function() {
+		switch(+this.get("mode")) {
+			case 0:
+				return this.get("overall_data");
+			case 1:
+				return this.get("user_data");
+			case 2:
+				return this.get("code_data");
+		}
 	}
 })
 
@@ -76,5 +91,11 @@ IRA.Models.Layer = Backbone.Model.extend({
 IRA.Models.LayerCollection = Backbone.Collection.extend({
 	model: IRA.Models.Layer
 });
+
+//
+// 
+//
+
+
 
 

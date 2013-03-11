@@ -68,9 +68,10 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 	},
 
 	render: function() {
+		var yearIdx = this.model.get("yearIdx");
 		var data = this.model.get("data");
 
-		if(data) {
+		if(data && yearIdx >= 0) {
 			this.drawData(this.model.get("data"));	
 		}
 		

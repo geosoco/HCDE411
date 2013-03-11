@@ -48,13 +48,14 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 
 		// update the framework
 		this.model.set({'mode': newMode });
-		router.navigate('/' + modeName );
+		router.navigate(modeName );
 	},
 
 	modechanged: function(ev) {
 		//console.log('ModeView: mode changed');
 
 		var mode = this.model.get('mode');
+
 		//console.dir(mode);
 
 		this.render();
@@ -83,15 +84,11 @@ IRA.Views.YearSelect = Backbone.View.extend({
 	},
 
 	render: function() {
-		/*
-		this.$el.empty();
+		var modelData = this.model.get("modeData");
 
-		var list = _.template('<% _.each(years, function(year) { %> <li><a><%= year.key %></a></li><% }); %>', {years: this.collection.toJSON()} );
-		this.$el.html(list);
-		*/
 		var yearButtons = d3.select("#yearselect > ul")
 				.selectAll("li")
-				.data(dataMap)
+				.data(modelData)
 				.enter().append("li")
 				.append("a")
 				.attr("href", "#")
@@ -108,8 +105,6 @@ IRA.Views.YearSelect = Backbone.View.extend({
 		$('li',this.$el).removeClass('active');
 		$('li:nth-child(' + (selected+1) + ')', this.$el).addClass('active');
 
-		//$('#yearselect li:first-child').attr('class', 'active');
-		//drawSessions(dataMap[0]);
 	},
 
 	yearChanged: function() {
@@ -125,10 +120,11 @@ IRA.Views.YearSelect = Backbone.View.extend({
 		//console.log('clicked: ' + ev.target.innerText);
 		var yearIdx = d3.select(ev.target).datum().idx;
 		this.model.set({yearIdx: yearIdx, year: ev.target.innerText});
-		//console.dir(dataMap[yearIdx]);
+		// 
 		$('li', this.$el).attr('class','');
 		$(ev.target).parent().attr('class','active');
 
+		return false;
 	}
 });
 
@@ -150,7 +146,10 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 		this.listenTo(this.model, "change:date", this.sessionChanged);
 
 		var yearIdx = this.model.get("yearIdx");
-		this.data = dataMap[yearIdx];
+		var modeData = this.model.get("modeData");
+		if(modeData && yearIdx >= 0 && yearIdx < modeData.length) {
+			this.data = modeData[yearIdx];
+		}
 		if(this.data) {
 			this.render();
 		}
@@ -245,7 +244,8 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 		//console.log('yearChanged');
 
 		var yearIdx = this.model.get("yearIdx");
-		this.data = dataMap[yearIdx];
+		var modelData = this.model.get("modeData");
+		this.data = modelData[yearIdx];
 		this.render();
 	},
 
@@ -320,6 +320,10 @@ IRA.Views.MainView = Backbone.View.extend({
 		}
 		// clear the view
 		$('#main-view').html('');
+
+
+
+		this.model.selectedSession.set({modeData: this.model.selectedMode.getData() })
 
 		// get the current view
 		var newView = null;

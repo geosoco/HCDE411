@@ -248,21 +248,21 @@
 				var format = d3.time.format("%Y-%m-%d %H:%M:%S");
 				var dayFormat = d3.time.format("%Y-%m-%d");
 
-				dataMap = d3.nest()
+				nestedOverallData = d3.nest()
 					.key(function(d){
 						return ((new Date(format.parse(d.time))).getYear() + 1900);
 					})
 					.key(function(d){ 
-						fulldate = new Date(format.parse(d.time));
-						date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
+						var fulldate = new Date(format.parse(d.time));
+						var date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
 						return dayFormat(date); 
 					})
 					.entries(data);
 
-				console.log("dataMap");
-				console.dir(dataMap);
+				console.log("nestedOverallData");
+				console.dir(nestedOverallData);
 
-				console.dir(d3.keys(dataMap));
+				//console.dir(d3.keys(dataMap));
 			}
 
 
@@ -274,7 +274,52 @@
 				possible_pairs = possible_pairs.filter(function(d){
 					return (d.indexOf('-') != -1);
 				});
-				console.dir(possible_pairs);
+
+				//console.log('possible pairs:');
+				//console.dir(possible_pairs);
+			}
+
+			function nestCodeData(data) {
+				var dayFormat = d3.time.format("%Y-%m-%d");
+
+				nestedCodeMap = d3.nest()
+					.key(function(d){
+						return (new Date(dayFormat.parse(d.day)).getYear() + 1900);
+					})
+					.key(function(d){
+						var fulldate = new Date(dayFormat.parse(d.day));
+						return d.day;
+					})
+					.key(function(d){
+						return +d.code;
+					})
+					.entries(data);
+
+				console.log('nestedCodeMap: ');
+				console.dir(nestedCodeMap);
+
+				return nestedCodeMap;
+			}
+
+			function nestUserData(data) {
+				var format = d3.time.format("%Y-%m-%d %H:%M:%S");
+				var dayFormat = d3.time.format("%Y-%m-%d");
+
+				nestedUserMap = d3.nest()
+					.key(function(d){
+						return ((new Date(format.parse(d.time))).getYear() + 1900);
+					})
+					.key(function(d){ 
+						var fulldate = new Date(format.parse(d.time));
+						var date = new Date(fulldate.getYear() + 1900, fulldate.getMonth(), fulldate.getDate())
+						return dayFormat(date); 
+					})
+					.entries(data);
+
+				console.log("nestedUserMap");
+				console.dir(nestedUserMap);
+
+				console.dir(d3.keys(nestedUserMap));
 			}
 
 			//
@@ -288,7 +333,9 @@
 						d3.csv("data/users15.csv", function(csv3) {
 							console.log('got csvs!');
 							console.dir(overall_data);
+							console.log('codes');
 							console.dir(csv2);
+							console.log('users');
 							console.dir(csv3);
 
 							// group the overall data by year and date
@@ -296,6 +343,13 @@
 
 							// grab our possible pairs
 							parsePossiblePairs(overall_data);
+
+							// nest code data
+							nestCodeData(csv2);
+
+							// nest user data
+							nestUserData(csv3);
+
 
 							// Start our application
 							router = new IRA.IRAApp();
@@ -348,6 +402,12 @@
 		</div>	
 	</script>
 	<script type="text/template" id="templ-users">
+		<div class="row-fluid">
+			<div id="yearselect">
+				<ul class="nav nav-pills"></ul>
+			</div>
+			<div id="sessions" class="span10"></div>              
+		</div>		
 		<div id="graph" class=""></div>
 		<div id="sidepanel" class="scrolllist">
 			<h4>Details</h4>
@@ -358,20 +418,18 @@
 		</div>	
 	</script>
 	<script type="text/template" id="templ-codes">
+		<div class="row-fluid">
+			<div id="yearselect">
+				<ul class="nav nav-pills"></ul>
+			</div>
+		</div>		
+
 		<div id="graph" class=""></div>
 		<div id="sidepanel" class="scrolllist">
 			<h4>Details</h4>
 			<div id="sp-details"></div>
 			<h4>Codes</h4>
-			<div class="scrolllist">
-				<div id="code-list-header" class="code-line">
-					<div><i class="icon-eye-close"></i></div>
-					<div><i class="icon-star"></i></div>
-					<div>#</div>
-					<div>Mean</div>
-				</div>
-				<ul id="sp-codes">
-				</ul>
+			<div class="scrolllist" id="codelist">
 			</div>
 		</div>	
 	</script>

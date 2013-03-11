@@ -29,7 +29,7 @@ IRA.IRAApp = Backbone.Router.extend({
 		this.modeSelectView = new IRA.Views.ModeSelect({el: "#mode-select", model: this.selectedMode });
 		this.mainView = new IRA.Views.MainView({el: '#main-view', model: { selectedMode: this.selectedMode, selectedSession: this.selectedSession} });
 
-		this.selectedMode.set({mode: 0});
+		this.selectedMode.set({mode: 0, overall_data: nestedOverallData, code_data: nestedCodeMap, user_data: nestedUserMap});
 		this.selectedSession.set({ year: 2004, yearIdx: 0});
 
 		Backbone.history.start();
