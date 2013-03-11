@@ -34,12 +34,11 @@ DBNAME = 'textprizm'
 #
 # XXX: TODO -- modify to ignore bert lines entirely?
 # 
-SELECT_INSTANCES_QUERY = """select dp.id as message_id, dp.participant_id as participant, dp.time as message_time, ci.user_id as user_id, ci.code_id as code_id, ci.added as date_added from data_points dp
+SELECT_INSTANCES_QUERY = """select dp.id as message_id, dp.participant_id as participant, dp.time as message_time, ci.user_id as user_id, ci.code_id as code_id, ci.added as date_added, ci.id as code_instance_id from data_points dp
 inner join coding_instances ci on ci.message_id = dp.id
 inner join coding_codes cc on cc.id = ci.code_id
 where cc.schema_id = 2 and cc.id not in (117,118,119,120,121,122,123,124,126) and dp.participant_id not in (1,2)
-group by dp.id, ci.user_id
-order by dp.time desc"""
+order by dp.time asc"""
 
 
 
@@ -64,7 +63,7 @@ parser.add_argument("--maxsegtime", type=int, help="maximum segment time size", 
 parser.add_argument("--maxlines", type=int, help="maximum number of lines in a segment", default=5)
 parser.add_argument("--binsize", type=int, help="number of datapoints to bin together", default=5)
 parser.add_argument("--minbinentries", type=int, help="minimum threshold of datapoints per bin", default=5)
-parser.add_argument("--maxbinskip", type=int, help="maximum number of lines in a bin", default=30 )
+parser.add_argument("--maxbinskip", type=int, help="maximum number of lines in a bin", default=50 )
 parser.add_argument("--dbhost", help="Database host name", default=DBHOST)
 parser.add_argument("--dbuser", help="Database user name", default=DBUSER)
 parser.add_argument("--dbname", help="Database name", default=DBNAME)
@@ -101,15 +100,17 @@ class ETCRow:
 		self.user_id = row[3]
 		self.code_id = row[4]
 		self.code_added_time = row[5]
+		self.code_instance_id = row[6]
 
 	def __str__(self):
-		return "ETCRow( id:%d, pid: %d, time: %s, user: %d, code: %d, added: %s)"%(
+		return "ETCRow( id:%d, pid: %d, time: %s, user: %d, code: %d, added: %s, instance_id: %s)"%(
 			self.id,
 			self.participant_id,
 			self.time.isoformat(' '),
 			self.user_id,
 			self.code_id,
-			self.code_added_time.isoformat(' '))
+			self.code_added_time.isoformat(' '),
+			self.code_instance_id)
 
 
 #
@@ -423,7 +424,7 @@ class UserAgreementCalculator:
 			row.update(pairs)
 			results.append(row)
 			#print "%s:%s"%(user_ids, pct_agreements)
-		return results
+		return sorted(results, key=lambda x: x['id'])
 
 
 
@@ -557,9 +558,10 @@ class AverageAggregator:
 				results.append(aggregate)
 				#reset the bin
 				cur_bin = { 'min-id': sys.maxint, 'max-id': -sys.maxint-1, 'lines': [] }
+
 			if cur_bin['min-id'] != sys.maxint and (i['id'] - cur_bin['min-id']) >= self.maxskip:
 				print "maxskip(%d) exceeded (%d,%d)"%(self.maxskip, i['id'], cur_bin['min-id'])
-				cur_bin = { 'min-id': sys.maxint, 'max-id': -sys.maxint-1, 'lines': [] }
+				cur_bin = { 'min-id': i['id'], 'max-id': i['id'], 'lines': [i] }
 			else:
 				cur_bin['lines'].append(i)
 				cur_bin['min-id'] = min(cur_bin['min-id'], i['id'])
@@ -638,7 +640,7 @@ print "max segment length: %d msgs"%maxseg
 
 agreementcalc = AgreementCalculator(segmenter.segments)
 results = agreementcalc.CalcAgreementBySegments()
-print pretty([r['id'] for r in results])
+#print pretty([r['id'] for r in results])
 
 print "aggregating %d lines with %d minimum values to be included"%(args.binsize, args.minbinentries)
 
