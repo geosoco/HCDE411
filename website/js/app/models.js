@@ -97,5 +97,28 @@ IRA.Models.LayerCollection = Backbone.Collection.extend({
 //
 
 
+IRA.Models.PairsDetails = Backbone.Model.extend({
+	defaults: {
+	},
 
+	initialize: function() {
+
+	}
+});
+
+//
+// graph flourishes
+//
+
+IRA.Models.GraphTrends = Backbone.Model.extend({
+	defaults: {
+		MeanSource: 0,
+		MeanType: 0,
+		MeanDistMethod: 0
+	},
+
+	initialize: function() {
+
+	}
+});
 

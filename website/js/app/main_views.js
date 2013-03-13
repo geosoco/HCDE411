@@ -645,7 +645,8 @@ IRA.Views.LayerView = Backbone.View.extend({
 	},
 
 	onHoverExit: function(ev) {
-
+		console.log('hoverExit');
+		console.dir(ev.srcElement);
 	},
 
 	onCollectionChanged: function(ev) {
@@ -691,6 +692,58 @@ IRA.Views.LayerView = Backbone.View.extend({
 		//console.log('coderlist2::onCollectionReset');
 		this.render();
 	}
+
+});
+
+
+//
+//
+//
+//
+//
+IRA.Views.GraphControlsView = Backbone.View.extend({
+	events: {
+		"click button[data-mds]": 			"meanSourceClicked", 
+		"click button[data-mdt]": 			"meanTypeClicked", 
+		"click button[data-mcm]": 			"meanConeClicked", 
+		"click button[data-mcr]": 			"meanConeRangeClicked", 				
+	},
+
+	initialize: function() {
+		//this.listenTo(this.model, "change:data", this.dataClicked );
+
+		//this.render();
+	},
+
+	render: function() {
+	},
+
+	meanSourceClicked: function(ev) {
+		var val = $(ev.srcElement).attr('data-mds');
+		this.model.set({"MeanSource": +val});
+
+		console.log('meanSourceClicked: ' + val);
+	},
+
+	meanTypeClicked: function(ev) {
+		var val = $(ev.srcElement).attr('data-mdt');
+		this.model.set({"MeanType": +val});
+
+		console.log('meanTypeClicked: ' + val);
+	},
+
+	meanConeClicked: function(ev) {
+		var val = $(ev.srcElement).attr('data-mcm');
+		this.model.set({"MeanDistMethod": +val});
+
+		console.log('meanConeClicked: ' + val);
+	},
+
+	meanConeRangeClicked: function(ev) {
+		//var val = $(ev.srcElement).attr('data-mdm');
+		//this.model.set({"MeanSource": +val});
+	},
+
 
 });
 

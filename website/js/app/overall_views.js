@@ -26,23 +26,38 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 	initialize: function() {
 		//console.log('mainview-init');
 		this.listenTo(this.model, "change:date", this.dateChanged );
+		this.listenTo(this.model, "change:data", this.processDetails );
 
 		this.render();
 
+		this.detailsModel = new IRA.Models.PairsDetails();
+		this.graphControlsModel = new IRA.Models.GraphTrends();
+
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.model });
-		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: this.model });
+		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: {baseModel: this.model, controlsModel: this.graphControlsModel} });
+		this.graphControls = new IRA.Views.GraphControlsView({el: "#graph-controls", model: this.graphControlsModel });
 		this.sidePanel = new IRA.Views.Overall.SidePanel({ el: "#sidepanel", model: this.model });
-		
+		this.detailsPane = new IRA.Views.Overall.DetailsPane({ el: "#bottom-view", model: this.detailsModel });
+
+		this.addSubview(this.yearSelectView);
+		this.addSubview(this.sessionDatesView);
+		this.addSubview(this.graph);
+		this.addSubview(this.sidePanel);
+		this.addSubview(this.detailsPane);
 	}, 
 
 	onClose: function() {
-		this.model.unbind("change:date", this.dateChanged );
+		//this.model.unbind("change:date", this.dateChanged );
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+		this.stopListening();
 
+		/*
 		this.yearSelectView.close();
 		this.sessionDatesView.close();
 		this.graph.close();
 		this.sidePanel.close();
+		*/
 	},
 
 	render: function() {
@@ -65,6 +80,13 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 		this.model.set({data: sessionData});
 	},
 
+	// handle detail specific numbers
+	processDetails: function() {
+		var data = this.model.get('data');
+
+		console.log('processDetails');
+		console.dir(data);
+	}
 
 
 });
@@ -83,35 +105,40 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 	initialize: function() {
 		//console.log('mainview-init');
 
-		this.listenTo(this.model, "change:data", this.dataChanged );
+		this.listenTo(this.model.baseModel, "change:data", this.dataChanged );
+		this.listenTo(this.model.controlsModel, "change", this.controlsChanged );
 
 		this.render();
 	}, 
 
 	onClose: function() {
 		//console.log('mainview-overall-close');
-		this.model.unbind("change:data", this.dataChanged);
+		//this.model.unbind("change:data", this.dataChanged);
+		this.stopListening(this.model.baseModel );
+		this.stopListening(this.model.controlsModel);
 	},
 
 	render: function() {
-		var yearIdx = this.model.get("yearIdx");
-		var data = this.model.get("data");
+		var yearIdx = this.model.baseModel.get("yearIdx");
+		var data = this.model.baseModel.get("data");
 
 		if(data && yearIdx >= 0) {
-			this.drawData(this.model.get("data"));	
+			this.drawData(this.model.baseModel.get("data"));	
 		}
 		
 	},
 
 	drawData: function(data) {
-		var m = [30, 30, 30, 30],
-			width = this.$el.width(),
+
+		this.m = [30,30,30,30];
+		this.labelWidth = 30;
+
+		var width = this.$el.width(),
 			height = this.$el.height(),
-			labelWidth = 30,
 			yAxisWidth = 10,
 			xAxisHeight = 20,
-			graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
-			graphHeight = height - xAxisHeight - m[0] - m[2];
+			graphWidth = width- this.labelWidth - yAxisWidth - this.m[1] - this.m[3],
+			graphHeight = height - xAxisHeight - this.m[0] - this.m[2];
 
 		var self = this;
 
@@ -164,12 +191,12 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 
 			// draw axes
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
+				.attr("transform", "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]+graphHeight) + ")" )
 				.attr("class", "x axis")
 				.call(this.xAxis);
 
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
+				.attr("transform", "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")" )
 				.attr("class", "y axis")
 				.call(this.yAxis);				
 		} else 
@@ -198,7 +225,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 				return d.pair;
 			})
 			.attr("transform", function(d) {
-				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
+				return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
 			}).transition(500)
 			.attr("opacity", 1);
 
@@ -236,6 +263,169 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 		this.render();
 
 		//this.drawData(this.model.get("data"));
+	},
+
+
+	processMeanData: function(source, type) {
+		var data = this.model.baseModel.get("data");
+
+		console.dir(data);
+
+		// return an empty array if we don't have data
+		if(typeof(data) === "undefined" || typeof(data.extra) === "undefined" || typeof(data.extra) === "undefined") {
+			return [];
+		}
+
+		//
+		switch(+source) {
+			case 0:
+				return [];
+			case 1:
+				return [];
+			case 2:
+				switch(+type) {
+					case 0:
+						var avg = data.extra.overall.avg;
+						return d3.entries(data.extra.point_data).map(function(d,i){
+							return {x: d.key, y: avg }
+						});
+					case 1:
+						return d3.entries(data.extra.point_data).map(function(d,i){
+							return {x: d.key, y: d.value.avg }
+						});
+				}
+
+		}
+
+		console.log('-------------[ error: unexpected source/type combo ]-------------------');
+
+	},
+
+	processConeData: function(means, type, range) {
+		var data = this.model.baseModel.get("data");
+
+		console.dir(data);
+
+		// return an empty array if we don't have data
+		if(typeof(data) === "undefined" || typeof(data.extra) === "undefined" || typeof(data.extra) === "undefined") {
+			return [];
+		}
+
+		//
+
+		switch(+type) {
+			case 0:
+				return [];
+			case 1:
+				var range = [-2,2];
+				return d3.entries(data.extra.point_data).map(function(d,i){
+					return {x: d.key, y0: d.value.avg + (d.value.sd * range[0]), y1: d.value.avg + (d.value.sd * range[1]) }
+				});				
+			case 2:
+				var avg = data.extra.overall.avg;
+				var range = [-15,15];
+				return d3.entries(data.extra.point_data).map(function(d,i){
+					return {x: d.key, y0: avg + range[0], y1: avg + range[1] }
+				});
+		}
+
+
+		console.log('-------------[ error: unexpected source/type combo ]-------------------');
+
+	},
+
+	controlsChanged: function(ev) {
+		console.log('controlsChanged');
+
+		if(typeof(this.svg) === "undfined" || this.svg == null ) {
+			return;
+		}
+
+
+		var meanSource = this.model.controlsModel.get("MeanSource");
+		var meanType = this.model.controlsModel.get("MeanType");
+		var coneType = this.model.controlsModel.get("MeanDistMethod");
+
+		var meanData = this.processMeanData(meanSource, meanType);
+		var coneData = this.processConeData(meanData, coneType);
+
+		console.log('meandata');
+		console.dir(meanData);
+
+		console.log('coneData');
+		console.dir(coneData);
+
+
+		if(typeof(this.svg) !== "undefined") {
+			var self = this;
+
+
+			//
+			// cone layer
+			//
+			if(coneData) {
+				this.conelayer = this.conelayer || this.svg.append("g");
+				this.conelayer.attr("transform", function(d) {
+						return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
+					}).classed("cone");
+
+				this.coneline = d3.svg.area()
+					.interpolate("linear")
+					.x(function(d){
+						return self.x_scale(+d.x); 
+					})
+					.y0(function(d) { 
+						return self.y_scale(+d.y0); 
+					})
+					.y1(function(d){
+						return self.y_scale(+d.y1);
+					});
+
+
+				var cone = this.conelayer.selectAll('path.cone').data([coneData]);
+
+				cone.enter()
+					.append("path")
+					.attr("class","cone")
+					.attr("d", this.coneline);
+
+				cone.transition(500).attr("d", this.coneline);
+
+				cone.exit().remove();
+
+			}
+
+
+			//
+			// mean layer
+			//
+			this.meanlinelayer = this.meanlinelayer || this.svg.append("g");
+			this.meanlinelayer.attr("transform", function(d) {
+					return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
+				}).classed("mean");
+
+			this.meanline = d3.svg.line()
+				.interpolate("linear")
+				.x(function(d) { 
+					return self.x_scale(+d.x); 
+				})
+				.y(function(d) { 
+					return self.y_scale(+d.y); 
+				});
+
+			var meanlines = this.meanlinelayer.selectAll('path.meanline').data([meanData]);
+
+			meanlines.enter()
+				.append("path")
+				.attr("class", "meanline")
+				.attr("d", this.meanline);
+
+			meanlines.transition(500).attr("d", this.meanline);
+
+			meanlines.exit().remove();
+
+		}
+
 	}
 
 });
@@ -526,4 +716,130 @@ IRA.Views.Overall.CoderList = Backbone.View.extend({
 });
 
 
+//
+//
+// 
+//
+//
+
+IRA.Views.Overall.DetailsPane = Backbone.View.extend({
+	events: {
+	},
+
+	initialize: function() {
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+
+		//this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
+
+
+		this.logdetails = new IRA.Views.Overall.LogDetailsPane({model: this.model });
+		this.pairdetails = new IRA.Views.Overall.PairDetailsPane({model: this.model });
+
+		this.addSubview(this.logdetails);
+		this.addSubview(this.pairdetails);
+
+		this.render();
+	},
+
+	addOne: function(item) {
+		var view = new IRA.Views.LayerItemView({model: item});
+		this.$("ul", this.el).append(view.render().el);
+	},
+
+	addAll: function() {
+		this.collection.each(this.addOne, this);
+	},	
+
+	onClose: function() {
+
+	},
+
+	render: function() {
+		if(this.model) {
+			var html = _.template($("#templ-detailspane").html());
+			$(this.el).html(html);
+
+			html = "";
+			if(this._subviews) {
+				this._subviews.forEach(function(subview){
+					this.$("#details", this.el).append(subview.render().el);
+				});
+			}
+
+		}		
+	},
+
+});
+
+//
+//
+// 
+//
+//
+
+IRA.Views.Overall.LogDetailsPane = Backbone.View.extend({
+	tagName: "div",
+	events: {
+	},
+
+	initialize: function() {
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+
+		this.render();
+	},
+
+	onClose: function() {
+
+	},
+
+	render: function() {
+		if(this.model) {
+			this.$el.html(_.template($("#templ-log-details-panel").html(), this.model.attributes));
+			this.$el.attr('id', 'log_details');
+			this.$el.addClass("pull_left details_panel span3");
+
+			return this;
+		} else {
+			return null;
+		}
+		
+	},
+
+});
+
+
+//
+//
+// 
+//
+//
+
+IRA.Views.Overall.PairDetailsPane = Backbone.View.extend({
+	tagName: "div",
+	events: {
+	},
+
+	initialize: function() {
+		//this.listenTo(this.model, "change:data", this.dataChanged );
+
+		this.render();
+	},
+
+	onClose: function() {
+
+	},
+
+	render: function() {
+		if(this.model) {
+			this.$el.html(_.template($("#templ-pair-details-panel").html(), this.model.attributes));
+			this.$el.attr('id', 'pair_details');
+			this.$el.addClass("pull_left details_panel span3");
+
+			return this;
+		} else {
+			return null;
+		}
+	},
+
+});
 

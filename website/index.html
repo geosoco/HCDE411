@@ -47,6 +47,7 @@
 				var histogram = {};
 				var pair_data = {};
 				var point_details = {};
+				var all_points = [];
 
 				var overall_sum = 0;
 				var overall_cnt = 0;
@@ -144,6 +145,7 @@
 
 				});
 
+
 				//console.log('calcing pair_data');
 				for(var pair in res.data) {
 					var values = d3.values(res.data[pair]);
@@ -198,12 +200,22 @@
 				});
 				*/
 
+				var overall_avg = (overall_sum / overall_cnt);
 
+				// run back over all points to calculate variance
+				var overall_ssq = d3.values(res.data).reduceRight(function(prev1,cur1){	
+					return prev1 + d3.values(cur1).reduceRight(function(prev2,cur2){
+						return prev2 + Math.pow((cur2-overall_avg),2);
+					});
+				});
+
+				overall_ssq /= overall_cnt;
+				var overall_sd = Math.sqrt(overall_ssq);
 
 				res.extra['timerange'] = timerange;
 				res.extra['range'] = range;
 				res.extra['histogram'] = histogram;
-				res.extra['overall'] = { avg: (overall_sum / overall_cnt), sum: overall_sum, cnt: overall_cnt, ssq: 0, sd: 0};
+				res.extra['overall'] = { avg: overall_avg, sum: overall_sum, cnt: overall_cnt, ssq: overall_ssq, sd: overall_sd};
 				res.extra['pair_data'] = pair_data;
 				res.extra['point_data'] = point_details;
 
@@ -389,15 +401,58 @@
 				<ul class="nav nav-pills"></ul>
 			</div>
 			<div id="sessions" class="span10"></div>              
-		</div>	
-		<div id="graph" class=""></div>
-		<div id="sidepanel" class="scrolllist">
-			<h4>Frequencies</h4>
-			<div id="sp-histogram"></div>
-			<h4>Details</h4>
-			<div id="sp-details"></div>
-			<h4>Coders</h4>
-			<div class="scrolllist" id="sp-coderlist">
+		</div>
+		<div class="row-fluid">
+			<div id="graph" class=""></div>
+			<div id="sidepanel" class="scrolllist">
+				<h4>Frequencies</h4>
+				<div id="sp-histogram"></div>
+				<h4>Details</h4>
+				<div id="sp-details"></div>
+				<h4>Coders</h4>
+				<div class="scrolllist" id="sp-coderlist">
+				</div>
+			</div>	
+		</div>
+		<div class="row-fluid">
+			<div class="well well-small" id="graph-controls">
+				<div class="graph-controls-row pull-left span5">
+					<h5>Mean Line:</h5>
+					<div class="pull-left graph-control-panel">
+						<label>Data Group:</label>
+						<div class="btn-group" data-toggle="buttons-radio" id="mean-data-source">
+							<button type="button" class="btn btn-small btn-primary active" data-mds="0">Off</button>
+							<button type="button" class="btn btn-small btn-primary" data-mds="1">Overall</button>
+							<button type="button" class="btn btn-small btn-primary" data-mds="2">Current Log</button>
+						</div>
+					</div>
+					<div class="pull-left graph-control-panel">
+						<label>Variation over time:</label>
+						<div class="btn-group" data-toggle="buttons-radio" id="mean-datapoints-type">
+							<button type="button" class="btn btn-small btn-primary active" data-mdt="0">Constant</button>
+							<button type="button" class="btn btn-small btn-primary" data-mdt="1">By Point</button>
+						</div>
+					</div>
+				</div>
+				<div class="graph-controls-row pull-left span5">
+					<h5>Filter Cone:</h5>
+					<div class="pull-left graph-control-panel">
+						<label>Distance from mean line</label>
+						<div class="btn-group" data-toggle="buttons-radio" id="mean-cone-method">
+							<button type="button" class="btn btn-small btn-primary active" data-mcm="0">Off</button>
+							<button type="button" class="btn btn-small btn-primary" data-mcm="1">Confidence Interval</button>
+							<button type="button" class="btn btn-small btn-primary" data-mcm="2">Range</button>
+						</div>
+					</div>
+					<div class="pull-left graph-control-panel">
+						<label>Range</label>
+						<div id="cone-range-slider">&lt;&lt; Slider &gt; &gt;</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row-fluid">
+			<div id="bottom-view">
 			</div>
 		</div>	
 	</script>
@@ -407,15 +462,18 @@
 				<ul class="nav nav-pills"></ul>
 			</div>
 			<div id="sessions" class="span10"></div>              
-		</div>		
-		<div id="graph" class=""></div>
-		<div id="sidepanel" class="scrolllist">
-			<h4>Details</h4>
-			<div id="sp-details"></div>
-			<h4>Coders</h4>
-			<div class="scrolllist" id="sp-userlist">
+		</div>
+		<div class="row-fluid">		
+			<div id="graph" class=""></div>
+			<div id="sidepanel" class="scrolllist">
+				<h4>Details</h4>
+				<div id="sp-details"></div>
+				<h4>Coders</h4>
+				<div class="scrolllist" id="sp-userlist">
+				</div>
 			</div>
-		</div>	
+		</div>
+
 	</script>
 	<script type="text/template" id="templ-codes">
 		<div class="row-fluid">
@@ -449,5 +507,46 @@
 		<div class="spotlight-toggle"><% if(spotlight) { %><i class="icon-star"></i><% } else { %><i class="icon-star-empty ll-unselected"></i><% } %></div>
 		<div><%= name %></div>
 		<div><%= details %></div>
+	</script>
+	<script type="text/template" id="templ-detailspane">
+
+		<div id="details" class="well well-small">
+			<!--
+			<div id="log_details" class="pull_left details_panel span3">
+				<h4>Log Details</h4>
+				<hr/>
+				<div class="panel_content">
+				</div>
+			</div>
+			<div id="pair_details" class="pull_left details_panel span3">
+				<h4>Pair Details</h4>
+				<hr/>
+				<div class="panel_content">
+				</div>
+			</div>
+			-->
+		</div>
+
+	</script>
+	<script type="text/template" id="templ-log-details-panel">
+		<h4>Log Details</h4>
+		<div class="panel_content">
+			<% if(typeof(numlines) != "undefined") { %><div class="details_row"><label>Number of Lines:</label><span><%= numlines %></span></div><% } %>
+			<% if(typeof(numusers) != "undefined") { %><div class="details_row"><label>Total Number of Users:</label><span><%= numusers %></span></div><% } %>
+			<% if(typeof(avgagreement) != "undefined") { %><div class="details_row"><label>Average Agreement:</label><span><%= avgagreement %></span></div><% } %>
+		</div>
+	</script>
+	<script type="text/template" id="templ-pair-details-panel">
+		<h4>Pair Details</h4>
+		<div class="panel_content">
+			<% if(typeof(user1) != "undefined" && typeof(user2) != "undefined") { %>
+				<div class="details_row"><label>Users:</label><span><%= user1 %> and <%= user2 %></span></div><% } %>
+			<% if(typeof(loglines) != "undefined") { %><div class="details_row"><label>Common log lines:</label><span><%= loglines %></span></div><% } %>
+			<div class="details_spacer_row"></div>
+			<% if(typeof(agreement) != "undefined") { %>
+				<div class="details_row"><label>Lowest agreement in log:</label><span><%= agreement[0] %></span></div>
+				<div class="details_row"><label>Highest agreement in log:</label><span><%= agreement[1] %></span></div>
+			<% } %>
+		</div>
 	</script>
 </html>
