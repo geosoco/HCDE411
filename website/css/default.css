@@ -93,10 +93,15 @@ path.meanline:hover {
 }
 
 path.cone {
-  fill: #fff;
-  stroke: #ccc;
+  fill: rgba(255,255,255,0.8);
+  stroke: #000;
   stroke-width: 0.5px;
-  opacity: 0.75;
+}
+
+path.cone:hover {
+  fill: rgba(225,225,255, 0.8);
+  stroke: #000;
+  stroke-width: 0.5px;
 }
 
 /*
