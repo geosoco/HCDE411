@@ -680,10 +680,14 @@ IRA.Views.GraphControlsView = Backbone.View.extend({
 	initialize: function() {
 		//this.listenTo(this.model, "change:data", this.dataClicked );
 
-		//this.render();
+		this.render();
 	},
 
 	render: function() {
+		var html = _.template($("#templ-graph-controls").html());
+		$(this.el).html(html);
+
+		
 	},
 
 	meanSourceClicked: function(ev) {

@@ -83,6 +83,9 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 		// navigate and set data
 		router.navigate("main/" + date);
 		this.model.set({data: sessionData});
+
+		// reprocess data
+		this.processDetails();
 	},
 
 	// handle detail specific numbers
@@ -251,7 +254,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 		// line generator
 		//
 		this.line = d3.svg.line()
-			.interpolate("linear")
+			.interpolate("monotone")
 			.x(function(d) { 
 				return self.x_scale(+d.time); 
 			})
@@ -279,7 +282,22 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 			this.svg.append("g")
 				.attr("transform", "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")" )
 				.attr("class", "y axis")
-				.call(this.yAxis);				
+				.call(this.yAxis);
+
+	        // axes labels
+	        var gAxisLabels = this.svg.append("g");
+
+	        gAxisLabels.append("text")
+	            .attr("class", "yAxisLabel")
+	            .attr("text-anchor", "middle")
+	            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
+	            .text("% Agreement");
+
+	        gAxisLabels.append("text")
+	            .attr("class", "xAxisLabel")
+	            .attr("text-anchor", "middle")
+	            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
+	            .text("Line Number");						
 		} else 
 		{
 			this.svg.select(".x.axis").transition(200).call(this.xAxis);
@@ -290,21 +308,6 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 				return {value: v, pair: k}; 
 			});
 
-
-        // axes labels
-        var gAxisLabels = this.svg.append("g");
-
-        gAxisLabels.append("text")
-            .attr("class", "yAxisLabel")
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
-            .text("% Agreement");
-
-        gAxisLabels.append("text")
-            .attr("class", "xAxisLabel")
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
-            .text("Line Number");
 
 		// temporary hack
 		//this.svg.selectAll("g.data").remove();
@@ -357,6 +360,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 		//console.dir(ev);
 
 		this.render();
+		this.controlsChanged();
 
 		//this.drawData(this.model.get("data"));
 	},

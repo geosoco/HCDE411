@@ -28,8 +28,10 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		this.listenTo(this.model, "change:date", this.dateChanged );
 		this.listenTo(this.model, "change:data", this.processDetails );
 		//this.listenTo(this.model, "change:year", this.yearChanged );
+
+		this.detailsModel = new IRA.Models.PairsDetails();
+		this.graphControlsModel = new IRA.Models.GraphTrends();		
 		this.layers = new IRA.Models.LayerCollection({});
-		this.createLayers();
 
 
 		this.render();
@@ -37,7 +39,9 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.model });
 		this.graph = new IRA.Views.Users.Graph({el: "#graph", model: this.model });
+		this.graphControls = new IRA.Views.GraphControlsView({el: "#graph-controls", model: this.graphControlsModel });
 		this.sidePanel = new IRA.Views.Users.SidePanel({ el: "#sidepanel", model: { baseModel: this.model, layers: this.layers } });
+		this.detailsPane = new IRA.Views.Overall.DetailsPane({ el: "#bottom-view", model: this.detailsModel });
 
 		this.dateChanged();
 	}, 
@@ -65,14 +69,19 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		console.log('overall.mainview.datechanged');
 
 		var date = this.model.get("date");
-		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
-		var selected_values = data.values;
 
-		var sessionData = this.processData(data);
+		if(date && date != null) {
+			var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
+			var selected_values = data.values;
 
-		router.navigate("user/" + date);
+			var sessionData = this.processData(data);
 
-		this.model.set({user_view_data: sessionData});
+			router.navigate("users/" + date);
+
+			this.model.set({user_view_data: sessionData});
+			this.createLayers();
+			
+		}
 	},
 
 	// handle detail specific numbers
@@ -320,7 +329,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		// line generator
 		//
 		this.line = d3.svg.line()
-			.interpolate("linear")
+			.interpolate("monotone")
 			.x(function(d) { 
 				return self.x_scale(+d.time); 
 			})
@@ -348,27 +357,29 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 			this.svg.append("g")
 				.attr("transform", "translate(" + (this.labelWidth + this.m[3]) + "," + (this.m[0]) + ")" )
 				.attr("class", "y axis")
-				.call(this.yAxis);				
+				.call(this.yAxis);			
+
+	        // axes labels
+	        var gAxisLabels = this.svg.append("g");
+
+	        gAxisLabels.append("text")
+	            .attr("class", "yAxisLabel")
+	            .attr("text-anchor", "middle")
+	            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
+	            .text("% Agreement");
+
+	        gAxisLabels.append("text")
+	            .attr("class", "xAxisLabel")
+	            .attr("text-anchor", "middle")
+	            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
+	            .text("Line Number");					
 		} else 
 		{
 			this.svg.select(".x.axis").transition(200).call(this.xAxis);
 			this.svg.select(".y.axis").transition(200).call(this.yAxis);
 		}
 
-        // axes labels
-        var gAxisLabels = this.svg.append("g");
 
-        gAxisLabels.append("text")
-            .attr("class", "yAxisLabel")
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
-            .text("% Agreement");
-
-        gAxisLabels.append("text")
-            .attr("class", "xAxisLabel")
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
-            .text("Line Number");
 
 
 		var mapped_pairs = $.map(data.data,function(v,k) {
@@ -432,6 +443,100 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 		this.render();
 
 		//this.drawData(this.model.get("data"));
+	},
+
+		controlsChanged: function(ev) {
+		console.log('controlsChanged');
+
+		if(typeof(this.svg) === "undfined" || this.svg == null ) {
+			return;
+		}
+
+
+		var meanSource = this.model.controlsModel.get("MeanSource");
+		var meanType = this.model.controlsModel.get("MeanType");
+		var coneType = this.model.controlsModel.get("MeanDistMethod");
+
+		var meanData = this.processMeanData(meanSource, meanType);
+		var coneData = this.processConeData(meanData, coneType);
+
+		console.log('meandata');
+		console.dir(meanData);
+
+		console.log('coneData');
+		console.dir(coneData);
+
+
+		if(typeof(this.svg) !== "undefined") {
+			var self = this;
+
+
+			//
+			// cone layer
+			//
+			if(coneData) {
+				this.conelayer = this.conelayer || this.svg.append("g");
+				this.conelayer.attr("transform", function(d) {
+						return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
+					}).classed("cone");
+
+				this.coneline = d3.svg.area()
+					.interpolate("linear")
+					.x(function(d){
+						return self.x_scale(+d.x); 
+					})
+					.y0(function(d) { 
+						return self.y_scale(+d.y0); 
+					})
+					.y1(function(d){
+						return self.y_scale(+d.y1);
+					});
+
+
+				var cone = this.conelayer.selectAll('path.cone').data([coneData]);
+
+				cone.enter()
+					.append("path")
+					.attr("class","cone")
+					.attr("d", this.coneline);
+
+				cone.transition(500).attr("d", this.coneline);
+
+				cone.exit().remove();
+
+			}
+
+
+			//
+			// mean layer
+			//
+			this.meanlinelayer = this.meanlinelayer || this.svg.append("g");
+			this.meanlinelayer.attr("transform", function(d) {
+					return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
+				}).classed("mean");
+
+			this.meanline = d3.svg.line()
+				.interpolate("linear")
+				.x(function(d) { 
+					return self.x_scale(+d.x); 
+				})
+				.y(function(d) { 
+					return self.y_scale(+d.y); 
+				});
+
+			var meanlines = this.meanlinelayer.selectAll('path.meanline').data([meanData]);
+
+			meanlines.enter()
+				.append("path")
+				.attr("class", "meanline")
+				.attr("d", this.meanline);
+
+			meanlines.transition(500).attr("d", this.meanline);
+
+			meanlines.exit().remove();
+
+		}
+
 	}
 
 });

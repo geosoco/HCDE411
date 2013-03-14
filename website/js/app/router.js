@@ -50,6 +50,7 @@ IRA.IRAApp = Backbone.Router.extend({
 
 	users: function(date) {
 		this.selectedMode.set({mode: 1});
+		this.setDate(date);
 
 		console.log('users:' + date);
 	},
@@ -58,7 +59,8 @@ IRA.IRAApp = Backbone.Router.extend({
 		this.selectedMode.set({mode: 2});
 
 		console.log('codes: ' + date);
-		this.setDate(date);
+		//this.setDate(date);
+		this.selectedSession.set({year: 2012+date, yearIdx:date});
 	},
 
 

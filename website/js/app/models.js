@@ -57,7 +57,7 @@ IRA.Models.LineGraphModel = Backbone.Model.extend({
 		margins: [10, 10, 20, 40],
 		xAxisLabel: "",
 		yAxisLabel: "",
-		lineInterpolation: "linear",
+		lineInterpolation: "monotone",
 	},
 
 	initialize: function() {

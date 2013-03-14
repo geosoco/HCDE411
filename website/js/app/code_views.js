@@ -29,6 +29,8 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 		this.listenTo(this.model, "change:year", this.yearChanged );
 		this.listenTo(this.model, "change:data", this.processDetails );
 
+		this.detailsModel = new IRA.Models.PairsDetails();
+		this.graphControlsModel = new IRA.Models.GraphTrends();
 		this.layers = new IRA.Models.LayerCollection({});
 		this.createLayers();
 
@@ -39,6 +41,8 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 
 		this.graph = new IRA.Views.Codes.Graph({el: "#graph", model: this.model });
 		this.sidePanel = new IRA.Views.Codes.SidePanel({ el: "#sidepanel", model: {baseModel: this.model, layers: this.layers } });
+		this.detailsPane = new IRA.Views.Overall.DetailsPane({ el: "#bottom-view", model: this.detailsModel });
+		this.graphControls = new IRA.Views.GraphControlsView({el: "#graph-controls", model: this.graphControlsModel });
 		
 		this.model.set({year: '2012', yearIdx: 0 });
 
@@ -79,7 +83,7 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 		}
 
 		// navigate the page the selected date
-		router.navigate("code/" + date);
+		router.navigate("codes/" + date);
 
 		this.model.set({data: selected_values});
 	},
@@ -100,6 +104,8 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 				data: selected_values,
 				extra: extra_data
 			};
+
+			router.navigate("codes/" + yearIdx);
 
 			this.model.set({code_view_data: new_data });
 
@@ -169,6 +175,100 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 			}
 		} else {
 			this.layers.reset([]);
+		}
+
+	},
+
+	controlsChanged: function(ev) {
+		console.log('controlsChanged');
+
+		if(typeof(this.svg) === "undfined" || this.svg == null ) {
+			return;
+		}
+
+
+		var meanSource = this.model.controlsModel.get("MeanSource");
+		var meanType = this.model.controlsModel.get("MeanType");
+		var coneType = this.model.controlsModel.get("MeanDistMethod");
+
+		var meanData = this.processMeanData(meanSource, meanType);
+		var coneData = this.processConeData(meanData, coneType);
+
+		console.log('meandata');
+		console.dir(meanData);
+
+		console.log('coneData');
+		console.dir(coneData);
+
+
+		if(typeof(this.svg) !== "undefined") {
+			var self = this;
+
+
+			//
+			// cone layer
+			//
+			if(coneData) {
+				this.conelayer = this.conelayer || this.svg.append("g");
+				this.conelayer.attr("transform", function(d) {
+						return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
+					}).classed("cone");
+
+				this.coneline = d3.svg.area()
+					.interpolate("linear")
+					.x(function(d){
+						return self.x_scale(+d.x); 
+					})
+					.y0(function(d) { 
+						return self.y_scale(+d.y0); 
+					})
+					.y1(function(d){
+						return self.y_scale(+d.y1);
+					});
+
+
+				var cone = this.conelayer.selectAll('path.cone').data([coneData]);
+
+				cone.enter()
+					.append("path")
+					.attr("class","cone")
+					.attr("d", this.coneline);
+
+				cone.transition(500).attr("d", this.coneline);
+
+				cone.exit().remove();
+
+			}
+
+
+			//
+			// mean layer
+			//
+			this.meanlinelayer = this.meanlinelayer || this.svg.append("g");
+			this.meanlinelayer.attr("transform", function(d) {
+					return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
+				}).classed("mean");
+
+			this.meanline = d3.svg.line()
+				.interpolate("linear")
+				.x(function(d) { 
+					return self.x_scale(+d.x); 
+				})
+				.y(function(d) { 
+					return self.y_scale(+d.y); 
+				});
+
+			var meanlines = this.meanlinelayer.selectAll('path.meanline').data([meanData]);
+
+			meanlines.enter()
+				.append("path")
+				.attr("class", "meanline")
+				.attr("d", this.meanline);
+
+			meanlines.transition(500).attr("d", this.meanline);
+
+			meanlines.exit().remove();
+
 		}
 
 	}
@@ -287,7 +387,7 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 		// line generator
 		//
 		this.line = d3.svg.line()
-			.interpolate("linear")
+			.interpolate("monotone")
 			.x(function(d) { 
 				return self.x_scale(d.value.date); 
 			})
@@ -315,7 +415,22 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 			this.svg.append("g")
 				.attr("transform", "translate(" + (this.labelWidth + this.m[3]) + "," + (this.m[0]) + ")" )
 				.attr("class", "y axis")
-				.call(this.yAxis);				
+				.call(this.yAxis);	
+
+	        // axes labels
+	        var gAxisLabels = this.svg.append("g");
+
+	        gAxisLabels.append("text")
+	            .attr("class", "yAxisLabel")
+	            .attr("text-anchor", "middle")
+	            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
+	            .text("% Agreement");
+
+	        gAxisLabels.append("text")
+	            .attr("class", "xAxisLabel")
+	            .attr("text-anchor", "middle")
+	            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
+	            .text("Code Application Date");							
 		} else 
 		{
 			this.svg.select(".x.axis").transition(200).call(this.xAxis);
@@ -327,20 +442,7 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 			});
 
 
-        // axes labels
-        var gAxisLabels = this.svg.append("g");
 
-        gAxisLabels.append("text")
-            .attr("class", "yAxisLabel")
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
-            .text("% Agreement");
-
-        gAxisLabels.append("text")
-            .attr("class", "xAxisLabel")
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
-            .text("Code Application Date");
 
 
 		// temporary hack
