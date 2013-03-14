@@ -346,7 +346,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 				.call(this.xAxis);
 
 			this.svg.append("g")
-				.attr("transform", "translate(" + (this.labelWidth + m[3]) + "," + (this.m[0]) + ")" )
+				.attr("transform", "translate(" + (this.labelWidth + this.m[3]) + "," + (this.m[0]) + ")" )
 				.attr("class", "y axis")
 				.call(this.yAxis);				
 		} else 
