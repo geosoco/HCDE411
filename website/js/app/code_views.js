@@ -73,6 +73,8 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 			extra: extra_data
 		}
 
+		router.navigate("code/" + date);
+
 		this.model.set({data: selected_values});
 	},
 

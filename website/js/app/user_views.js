@@ -66,7 +66,7 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 
 		var sessionData = this.processData(data);
 
-		//sessionData = transformPairs(selected_values);
+		router.navigate("user/" + date);
 
 		this.model.set({user_view_data: sessionData});
 	},

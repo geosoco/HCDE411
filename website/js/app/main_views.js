@@ -48,13 +48,14 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 
 		// update the framework
 		this.model.set({'mode': newMode });
-		router.navigate(modeName );
+		
 	},
 
 	modechanged: function(ev) {
 		//console.log('ModeView: mode changed');
 
 		var mode = this.model.get('mode');
+		
 
 		//console.dir(mode);
 

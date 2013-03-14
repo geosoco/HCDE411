@@ -24,19 +24,23 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 	},
 
 	initialize: function() {
+		this.dayFormat = d3.time.format("%Y-%m-%d");
+
+
+		// event listening
 		//console.log('mainview-init');
 		this.listenTo(this.model, "change:date", this.dateChanged );
 		this.listenTo(this.model, "change:data", this.processDetails );
 
 		this.render();
 
+		// local models
 		this.detailsModel = new IRA.Models.PairsDetails();
 		this.graphControlsModel = new IRA.Models.GraphTrends();
 		this.layers = new IRA.Models.LayerCollection({});
 		this.createLayers();
 
-
-
+		// views
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.model });
 		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: {baseModel: this.model, controlsModel: this.graphControlsModel} });
@@ -52,16 +56,7 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 	}, 
 
 	onClose: function() {
-		//this.model.unbind("change:date", this.dateChanged );
-		//this.listenTo(this.model, "change:data", this.dataChanged );
 		this.stopListening();
-
-		/*
-		this.yearSelectView.close();
-		this.sessionDatesView.close();
-		this.graph.close();
-		this.sidePanel.close();
-		*/
 	},
 
 	render: function() {
@@ -80,6 +75,8 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 		var selected_values = data.values;
 
 		sessionData = transformPairs(selected_values);
+
+		router.navigate("main/" + date);
 
 		this.model.set({data: sessionData});
 	},
