@@ -32,12 +32,16 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 
 		this.detailsModel = new IRA.Models.PairsDetails();
 		this.graphControlsModel = new IRA.Models.GraphTrends();
+		this.layers = new IRA.Models.LayerCollection({});
+		this.createLayers();
+
+
 
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.model });
 		this.graph = new IRA.Views.Overall.Graph({el: "#graph", model: {baseModel: this.model, controlsModel: this.graphControlsModel} });
 		this.graphControls = new IRA.Views.GraphControlsView({el: "#graph-controls", model: this.graphControlsModel });
-		this.sidePanel = new IRA.Views.Overall.SidePanel({ el: "#sidepanel", model: this.model });
+		this.sidePanel = new IRA.Views.Overall.SidePanel({ el: "#sidepanel", model: { baseModel: this.model, layers: this.layers} });
 		this.detailsPane = new IRA.Views.Overall.DetailsPane({ el: "#bottom-view", model: this.detailsModel });
 
 		this.addSubview(this.yearSelectView);
@@ -86,8 +90,83 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 
 		console.log('processDetails');
 		console.dir(data);
-	}
 
+		if(data) {
+
+			this.createLayers();			
+
+			var vals = {};
+
+			vals['numlines'] = (data.extra.range[1] + 20) - data.extra.range[0];
+			vals['numusers'] = data.extra.coders.length;
+			vals['avgagreement'] = Utils.Math.trunc(data.extra.overall.avg,2);
+
+			this.detailsModel.set(vals);
+
+		}
+
+	},
+
+	createLayers: function() {
+
+		if(this.model) {
+			var data = this.model.get("data");
+
+			if(typeof data != "undefined" && data != null) {
+				var html = "";
+
+				var coders = {};
+				d3.entries(data.extra.pair_data).forEach(function(d,i){
+					var matches = d.key.match(/(\d{1,2})-(\d{1,2})/);
+
+					if(matches != null && matches.length > 2) {
+						var coder1 = matches[1],
+							coder2 = matches[2];
+
+						if(!(coder1 in coders)) {
+							coders[coder1] = {pairs: [d.key], vals: [d.value.avg] };
+						} else {
+							coders[coder1].pairs.push(d.key);
+							coders[coder1].vals.push(d.value.avg);
+						}
+						if(!(coder2 in coders)) {
+							coders[coder2] = {pairs: [d.key], vals: [d.value.avg] };
+						} else {
+							coders[coder2].pairs.push(d.key);
+							coders[coder2].vals.push(d.value.avg);
+						}
+
+
+					} 
+				});
+
+				//console.log("coders");
+				//console.dir(coders);
+
+				var coder_array = d3.entries(coders).map(function(d,i){
+					return {
+						id: +d.key,
+						name: d.key,
+						details: Utils.Math.trunc(d3.mean(d.value.vals),2),
+						pairs: d.value.pairs,
+						averages: d.value.vals
+					}
+				});
+
+				this.layers.reset(coder_array);
+				data.extra['coders'] = coder_array;
+
+				this.coders = coders;
+
+
+			} else {
+				this.layers.reset([]);
+			}
+		} else {
+			this.layers.reset([]);
+		}
+
+	}
 
 });
 
@@ -443,9 +522,9 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 
 	initialize: function() {
 
-		this.listenTo(this.model, "change:data", this.dataChanged );
+		this.listenTo(this.model.baseModel, "change:data", this.dataChanged );
 
-		var data = this.model.get("data");
+		var data = this.model.baseModel.get("data");
 		this.histogramModel = new IRA.Models.LineGraphModel({
 			data: null, 
 			xDomain: [0,100],
@@ -453,23 +532,19 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 			yTicks: 3
 		});
 
-		this.layers = new IRA.Models.LayerCollection({});
-		this.createLayers();
-
 
 		this.transformBaseData(data);
 		this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
-		this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
-		//this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
-		this.coderlist = new IRA.Views.LayerView({el: "#sp-coderlist", collection: this.layers });
+		this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model.baseModel });
+		this.coderlist = new IRA.Views.LayerView({el: "#sp-coderlist", collection: this.model.layers });
 	},
 
 	onClose: function() {
-		this.model.unbind("change:data", this.dataChanged);
+		this.model.baseModel.unbind("change:data", this.dataChanged);
 	},
 
 	render: function() {
-		var data = this.model.get("data");
+		var data = this.model.baseModel.get("data");
 
 		if(data) {
 
@@ -503,72 +578,11 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 		//console.log("OverallSidePanel: dataChanged");
 		//console.dir(ev);
 
-		var baseData = this.model.get("data");
+		var baseData = this.model.baseModel.get("data");
 		this.transformBaseData(baseData);
-		this.createLayers();
 
 		this.stats.render();
 	},
-
-	createLayers: function() {
-
-		if(this.model) {
-			var data = this.model.get("data");
-
-			if(typeof data != "undefined" && data != null) {
-				var html = "";
-
-				var coders = {};
-				d3.entries(data.extra.pair_data).forEach(function(d,i){
-					var matches = d.key.match(/(\d{1,2})-(\d{1,2})/);
-
-					if(matches != null && matches.length > 2) {
-						var coder1 = matches[1],
-							coder2 = matches[2];
-
-						if(!(coder1 in coders)) {
-							coders[coder1] = {pairs: [d.key], vals: [d.value.avg] };
-						} else {
-							coders[coder1].pairs.push(d.key);
-							coders[coder1].vals.push(d.value.avg);
-						}
-						if(!(coder2 in coders)) {
-							coders[coder2] = {pairs: [d.key], vals: [d.value.avg] };
-						} else {
-							coders[coder2].pairs.push(d.key);
-							coders[coder2].vals.push(d.value.avg);
-						}
-
-
-					} 
-				});
-
-				//console.log("coders");
-				//console.dir(coders);
-
-				var coder_array = d3.entries(coders).map(function(d,i){
-					return {
-						id: +d.key,
-						name: d.key,
-						details: Utils.Math.trunc(d3.mean(d.value.vals),2),
-						pairs: d.value.pairs,
-						averages: d.value.vals
-					}
-				});
-
-				this.layers.reset(coder_array);
-
-				this.coders = coders;
-
-
-			} else {
-				this.layers.reset([]);
-			}
-		} else {
-			this.layers.reset([]);
-		}
-
-	}
 
 	
 });
@@ -727,6 +741,7 @@ IRA.Views.Overall.DetailsPane = Backbone.View.extend({
 	},
 
 	initialize: function() {
+		this.listenTo(this.model, "change", this.render);
 		//this.listenTo(this.model, "change:data", this.dataChanged );
 
 		//this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
