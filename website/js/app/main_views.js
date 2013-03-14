@@ -55,7 +55,7 @@ IRA.Views.ModeSelect = Backbone.View.extend({
 		//console.log('ModeView: mode changed');
 
 		var mode = this.model.get('mode');
-		
+
 
 		//console.dir(mode);
 
@@ -158,87 +158,89 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 	},
 
 	render: function() {
-				var width = 600,
-					height = 70,
-					format = d3.time.format("%b %d"),
-					self = this;
+		var width = 600,
+			height = 70,
+			format = d3.time.format("%b %d"),
+			self = this;
 
-				// sort our data first
-				this.data.values.sort(function(a,b){
-					return Date.parse(a.key) - Date.parse(b.key);
-				});
-
-
-				// build our scale
-				this.x_scale = this.x_scale || d3.scale.ordinal()
-						.rangeRoundBands([2,width],0);
-
-				this.x_scale.domain(this.data.values.map(function(d2) { return d2.key; }))
-						
-
-				this.color = this.color || d3.scale.quantize()
-						.domain([0, 32])
-						.range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
-
-				this.sessionSVG = this.sessionSVG || d3.select("#sessions")
-							.append("svg")
-							.attr("width", width)
-							.attr("height", height)
-							.append("g")
-							.attr("class", "Greys");
+		// sort our data first
+		this.data.values.sort(function(a,b){
+			return Date.parse(a.key) - Date.parse(b.key);
+		});
 
 
+		// build our scale
+		this.x_scale = this.x_scale || d3.scale.ordinal()
+				.rangeRoundBands([2,width],0);
 
-
-				var daysGraph = this.sessionSVG.selectAll("g.session")
-								.data(this.data.values, function(d,i){
-									return d.key;
-								});
-
-				daysGraph.transition()
-							.attr("transform", function(d){
-								return "translate(" + self.x_scale(d.key) + ",0)";
-							});
-
-				var days = daysGraph.enter()
-					.append("g")
-					.attr("class", "session")
-					.attr("transform", function(d){
-						return "translate(" + width + ",0)";
-					});
-
+		this.x_scale.domain(this.data.values.map(function(d2) { return d2.key; }))
 				
-				daysGraph.exit().transition(100).attr("transform", function(d){
-						return "translate(-30,0)";
-					})
-					.remove();
+
+		this.color = this.color || d3.scale.quantize()
+				.domain([0, 32])
+				.range(d3.range(5).map(function(d) { return "q" + d + "-5"; }));
+
+		this.sessionSVG = this.sessionSVG || d3.select("#sessions")
+					.append("svg")
+					.attr("width", width)
+					.attr("height", height)
+					.append("g")
+					.attr("class", "Greys");
 
 
 
 
-				days.append("rect")
-					.attr("x", 0)
-					.attr("y", 1)
-					.attr("width", 16)
-					.attr("height", 16)
-					.attr("data-date", function(d,i){
-						return d.key;
-					})
-					.attr("class", function(d){ 
-						return "day " + self.color(d.values.length); 
-					});
+		var daysGraph = this.sessionSVG.selectAll("g.session")
+						.data(this.data.values, function(d,i){
+							return d.key;
+						});
 
-				days.append("text")
-					.attr("x", 0)
-					.attr("y", 20)
-					.attr("text-anchor", "start")
-					.text(function(d){ return format(new Date(d.key)); })
-					.attr("transform", "translate(22,20)rotate(90)");
-
-				days.transition(100)
+		daysGraph.transition()
 					.attr("transform", function(d){
 						return "translate(" + self.x_scale(d.key) + ",0)";
 					});
+
+		var days = daysGraph.enter()
+			.append("g")
+			.attr("class", "session")
+			.attr("transform", function(d){
+				return "translate(" + width + ",0)";
+			});
+
+		
+		daysGraph.exit().transition(100).attr("transform", function(d){
+				return "translate(-30,0)";
+			})
+			.remove();
+
+
+
+
+		days.append("rect")
+			.attr("x", 0)
+			.attr("y", 1)
+			.attr("width", 16)
+			.attr("height", 16)
+			.attr("data-date", function(d,i){
+				return d.key;
+			})
+			.attr("class", function(d){ 
+				return "day " + self.color(d.values.length); 
+			});
+
+		days.append("text")
+			.attr("x", 0)
+			.attr("y", 20)
+			.attr("text-anchor", "start")
+			.text(function(d){ return format(new Date(d.key)); })
+			.attr("transform", "translate(22,20)rotate(90)");
+
+		days.transition(100)
+			.attr("transform", function(d){
+				return "translate(" + self.x_scale(d.key) + ",0)";
+			});
+
+		this.sessionChanged();
 
 	},
 
@@ -252,9 +254,6 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 	},
 
 	sessionChanged: function(ev) {
-		//console.log('session Changed');
-		//console.dir(ev);
-
 		$('rect', this.$el).attr('class', function(i,attr){
 			return attr.replace('selected','');
 		});
@@ -263,19 +262,6 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 		var sel = $('rect[data-date="' + date + '"]', this.$el);
 		var curClass = sel.attr('class');
 		sel.attr('class', curClass + ' selected');
-
-
-		//var date = this.model.get("date");
-		//var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
-		//var selected_values = data.values;
-
-		//sessionData = transformPairs(selected_values);
-
-		//this.model.set({data: selected_values});
-
-		//drawData(sessionData);
-		//drawHistogram("#histogram", sessionData.extra.histogram);
-		//drawPairNames("#pairnames", sessionData);
 	},
 
 
@@ -285,25 +271,6 @@ IRA.Views.SessionDatesView = Backbone.View.extend({
 
 		var selectedDate = $(ev.srcElement).attr('data-date');
 		this.model.set({date: selectedDate });
-
-
-		var data = d3.select(ev.srcElement).datum();
-
-
-		//var selected_date = data.key;
-		//var selected_values = data.values;
-
-		
-		//console.dir(ev);
-		//console.dir("clicked " + data.key);
-
-		//sessionData = transformPairs(selected_values);
-		//this.model.set({data: sessionData});
-		/*
-		drawData(sessionData);
-		drawHistogram("#histogram", sessionData.extra.histogram);
-		drawPairNames("#pairnames", sessionData);
-		*/
 	},
 
 
@@ -587,7 +554,7 @@ IRA.Views.LayerView = Backbone.View.extend({
 		this.listenTo(this.collection, "reset", this.onCollectionReset );
 		//this.listenTo(this.model, "change:data", this.dataChanged );
 
-		//this.render();
+		this.render();
 	},
 
 	render: function() {

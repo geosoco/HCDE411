@@ -27,13 +27,18 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 
 		this.listenTo(this.model, "change:date", this.dateChanged );
 		this.listenTo(this.model, "change:year", this.yearChanged );
+		this.listenTo(this.model, "change:data", this.processDetails );
+
+		this.layers = new IRA.Models.LayerCollection({});
+		this.createLayers();
+
 
 		this.render();
 
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 
 		this.graph = new IRA.Views.Codes.Graph({el: "#graph", model: this.model });
-		this.sidePanel = new IRA.Views.Codes.SidePanel({ el: "#sidepanel", model: this.model });
+		this.sidePanel = new IRA.Views.Codes.SidePanel({ el: "#sidepanel", model: {baseModel: this.model, layers: this.layers } });
 		
 		this.model.set({year: '2012', yearIdx: 0 });
 
@@ -59,7 +64,7 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 	// needs to be here because sessionSelect is a shared view, and this handles the mode
 	// specific stuff
 	dateChanged: function(ev) {
-		console.log('overall.mainview.datechanged');
+		//console.log('overall.mainview.datechanged');
 
 		var date = this.model.get("date");
 		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
@@ -73,13 +78,14 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 			extra: extra_data
 		}
 
+		// navigate the page the selected date
 		router.navigate("code/" + date);
 
 		this.model.set({data: selected_values});
 	},
 
 	yearChanged: function(ev) {
-		console.log('yearchanged: ' + ev.attributes['yearIdx']);
+		//console.log('yearchanged: ' + ev.attributes['yearIdx']);
 
 		var yearIdx = ev.attributes['yearIdx'];
 		var modeData = this.model.get('modeData');
@@ -107,6 +113,8 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 
 		var dateExtent = [Number.MAX_VALUE, Number.MIN_VALUE];
 
+		this.createLayers();
+
 
 		if(data) {
 			data.forEach(function(d,i){
@@ -131,59 +139,6 @@ IRA.Views.Codes.MainView = Backbone.View.extend({
 			range: dateExtent,
 			codes: data.map(function(d){ return d.key; })
 		};
-	},
-
-	
-
-});
-
-
-//
-//
-// 
-//
-//
-
-IRA.Views.Codes.SidePanel = Backbone.View.extend({
-	events: {
-
-	},
-
-	initialize: function() {
-
-		this.listenTo(this.model, "change:code_view_data", this.dataChanged );
-
-		this.layers = new IRA.Models.LayerCollection({});
-		this.createLayers();
-
-
-		//this.transformBaseData(data);
-		//this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
-		//this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
-		//this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
-		this.coderlist = new IRA.Views.LayerView({el: "#sp-codelist", collection: this.layers });
-
-
-	},
-
-	onClose: function() {
-		this.model.unbind("change:code_view_data", this.dataChanged);
-	},
-
-
-	render: function() {
-
-	},
-
-	dataChanged: function(ev) {
-		//console.log("OverallSidePanel: dataChanged");
-		//console.dir(ev);
-
-		var baseData = this.model.get("code_view_data");
-		//this.transformBaseData(baseData);
-		this.createLayers();
-
-		//this.stats.render();
 	},
 
 	createLayers: function() {
@@ -217,6 +172,44 @@ IRA.Views.Codes.SidePanel = Backbone.View.extend({
 		}
 
 	}
+
+});
+
+
+//
+//
+// 
+//
+//
+
+IRA.Views.Codes.SidePanel = Backbone.View.extend({
+	events: {
+
+	},
+
+	initialize: function() {
+
+		this.listenTo(this.model.baseModel, "change:code_view_data", this.dataChanged );
+
+		this.coderlist = new IRA.Views.LayerView({el: "#sp-codelist", collection: this.model.layers });
+
+
+	},
+
+	onClose: function() {
+		//this.model.unbind("change:code_view_data", this.dataChanged);
+	},
+
+
+	render: function() {
+
+	},
+
+	dataChanged: function(ev) {
+
+	},
+
+	
 });
 
 
@@ -254,14 +247,15 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 	},
 
 	drawData: function(data) {
-		var m = [30, 30, 30, 30],
-			width = this.$el.width(),
+		this.m = [30,30,30,30];
+		this.labelWidth = 30;
+
+		var width = this.$el.width(),
 			height = this.$el.height(),
-			labelWidth = 30,
 			yAxisWidth = 10,
 			xAxisHeight = 20,
-			graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
-			graphHeight = height - xAxisHeight - m[0] - m[2];
+			graphWidth = width- this.labelWidth - yAxisWidth - this.m[1] - this.m[3],
+			graphHeight = height - xAxisHeight - this.m[0] - this.m[2];
 
 		var self = this;
 
@@ -314,12 +308,12 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 
 			// draw axes
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
+				.attr("transform", "translate(" + (this.labelWidth + this.m[3]) + "," + (this.m[0]+graphHeight) + ")" )
 				.attr("class", "x axis")
 				.call(this.xAxis);
 
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
+				.attr("transform", "translate(" + (this.labelWidth + this.m[3]) + "," + (this.m[0]) + ")" )
 				.attr("class", "y axis")
 				.call(this.yAxis);				
 		} else 
@@ -331,6 +325,22 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 		var mapped_pairs = $.map(data.data,function(v,k) {
 				return {value: v.values, code: v.key}; 
 			});
+
+
+        // axes labels
+        var gAxisLabels = this.svg.append("g");
+
+        gAxisLabels.append("text")
+            .attr("class", "yAxisLabel")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
+            .text("% Agreement");
+
+        gAxisLabels.append("text")
+            .attr("class", "xAxisLabel")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
+            .text("Code Application Date");
 
 
 		// temporary hack
@@ -348,7 +358,7 @@ IRA.Views.Codes.Graph = Backbone.View.extend({
 				return d.code;
 			})
 			.attr("transform", function(d) {
-				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
+				return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
 			}).transition(500)
 			.attr("opacity", 1);
 

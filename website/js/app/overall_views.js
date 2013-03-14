@@ -74,10 +74,14 @@ IRA.Views.Overall.MainView = Backbone.View.extend({
 		var data = d3.select($('rect[data-date="' + date + '"]', this.$el).first()[0]).datum();
 		var selected_values = data.values;
 
+		// transform data
 		sessionData = transformPairs(selected_values);
 
-		router.navigate("main/" + date);
+		// recrreate layers
+		this.createLayers();
 
+		// navigate and set data
+		router.navigate("main/" + date);
 		this.model.set({data: sessionData});
 	},
 
@@ -242,6 +246,7 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 		this.xAxis.scale(this.x_scale)
 			.orient("bottom");
 
+
 		//
 		// line generator
 		//
@@ -285,6 +290,21 @@ IRA.Views.Overall.Graph = Backbone.View.extend({
 				return {value: v, pair: k}; 
 			});
 
+
+        // axes labels
+        var gAxisLabels = this.svg.append("g");
+
+        gAxisLabels.append("text")
+            .attr("class", "yAxisLabel")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
+            .text("% Agreement");
+
+        gAxisLabels.append("text")
+            .attr("class", "xAxisLabel")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
+            .text("Line Number");
 
 		// temporary hack
 		//this.svg.selectAll("g.data").remove();
@@ -532,7 +552,6 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 
 		this.transformBaseData(data);
 		this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
-		this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model.baseModel });
 		this.coderlist = new IRA.Views.LayerView({el: "#sp-coderlist", collection: this.model.layers });
 	},
 
@@ -541,17 +560,7 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 	},
 
 	render: function() {
-		var data = this.model.baseModel.get("data");
 
-		if(data) {
-
-		} else {
-			//$("#sp-")
-		}
-
-		if(this.stats) {
-			this.stats.render();
-		}
 	},
 
 	transformBaseData: function(baseData) {
@@ -572,13 +581,8 @@ IRA.Views.Overall.SidePanel = Backbone.View.extend({
 	},
 
 	dataChanged: function(ev) {
-		//console.log("OverallSidePanel: dataChanged");
-		//console.dir(ev);
-
 		var baseData = this.model.baseModel.get("data");
 		this.transformBaseData(baseData);
-
-		this.stats.render();
 	},
 
 	

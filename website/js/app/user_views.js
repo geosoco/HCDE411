@@ -26,7 +26,10 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		console.log('userview-init');
 
 		this.listenTo(this.model, "change:date", this.dateChanged );
+		this.listenTo(this.model, "change:data", this.processDetails );
 		//this.listenTo(this.model, "change:year", this.yearChanged );
+		this.layers = new IRA.Models.LayerCollection({});
+		this.createLayers();
 
 
 		this.render();
@@ -34,8 +37,9 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		this.yearSelectView = new IRA.Views.YearSelect({el: "#yearselect", model: this.model });
 		this.sessionDatesView = new IRA.Views.SessionDatesView({el: '#sessions', model: this.model });
 		this.graph = new IRA.Views.Users.Graph({el: "#graph", model: this.model });
-		this.sidePanel = new IRA.Views.Users.SidePanel({ el: "#sidepanel", model: this.model });
-		
+		this.sidePanel = new IRA.Views.Users.SidePanel({ el: "#sidepanel", model: { baseModel: this.model, layers: this.layers } });
+
+		this.dateChanged();
 	}, 
 
 	onClose: function() {
@@ -71,10 +75,35 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 		this.model.set({user_view_data: sessionData});
 	},
 
+	// handle detail specific numbers
+	processDetails: function() {
+		var data = this.model.get('data');
+
+		console.log('processDetails');
+		console.dir(data);
+
+		if(data) {
+
+			this.createLayers();			
+
+			var vals = {};
+
+			vals['numlines'] = (data.extra.range[1] + 20) - data.extra.range[0];
+			vals['numusers'] = data.extra.coders.length;
+			vals['avgagreement'] = Utils.Math.trunc(data.extra.overall.avg,2);
+
+			this.detailsModel.set(vals);
+
+		}
+	},
+
 
 	processData: function(data) {
 		var res = {};
 		var coders = {};
+
+
+		this.createLayers();
 
 		var dateExtent = [Number.MAX_VALUE, Number.MIN_VALUE];
 		var lineExtent = [Number.MAX_VALUE, Number.MIN_VALUE];
@@ -139,57 +168,6 @@ IRA.Views.Users.MainView = Backbone.View.extend({
 
 
 		return res;
-	}
-
-
-});
-
-
-//
-//
-// 
-//
-//
-
-IRA.Views.Users.SidePanel = Backbone.View.extend({
-	events: {
-
-	},
-
-	initialize: function() {
-
-		this.listenTo(this.model, "change:user_view_data", this.dataChanged );
-
-		this.layers = new IRA.Models.LayerCollection({});
-		this.createLayers();
-
-
-		//this.transformBaseData(data);
-		//this.histogram = new IRA.Views.LineGraph({el: "#sp-histogram", model: this.histogramModel });
-		//this.stats = new IRA.Views.Overall.Stats({el: "#sp-details", model: this.model });
-		//this.coderlist = new IRA.Views.Overall.CoderList({el: "#sp-coders", model: this.model });
-		this.coderlist = new IRA.Views.LayerView({el: "#sp-userlist", collection: this.layers });
-
-
-	},
-
-	onClose: function() {
-		this.model.unbind("change:user_view_data", this.dataChanged);
-	},
-
-
-
-	render: function() {
-
-	},
-
-	dataChanged: function(ev) {
-
-		var baseData = this.model.get("user_view_data");
-		//this.transformBaseData(baseData);
-		this.createLayers();
-
-		//this.stats.render();
 	},
 
 	createLayers: function() {
@@ -223,6 +201,50 @@ IRA.Views.Users.SidePanel = Backbone.View.extend({
 
 	}
 
+
+
+});
+
+
+//
+//
+// 
+//
+//
+
+IRA.Views.Users.SidePanel = Backbone.View.extend({
+	events: {
+
+	},
+
+	initialize: function() {
+
+		//this.listenTo(this.model, "change:user_view_data", this.dataChanged );
+
+		this.coderlist = new IRA.Views.LayerView({el: "#sp-userlist", collection: this.model.layers });
+
+	},
+
+	onClose: function() {
+		//this.model.unbind("change:user_view_data", this.dataChanged);
+	},
+
+
+
+	render: function() {
+
+	},
+
+	dataChanged: function(ev) {
+
+		//var baseData = this.model.get("user_view_data");
+		//this.transformBaseData(baseData);
+		//this.createLayers();
+
+		//this.stats.render();
+	},
+
+	
 });
 
 //
@@ -259,15 +281,15 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 	},
 
 	drawData: function(data) {
-		var m = [30, 30, 30, 30],
-			width = this.$el.width(),
+		this.m = [30,30,30,30];
+		this.labelWidth = 30;
+
+		var width = this.$el.width(),
 			height = this.$el.height(),
-			labelWidth = 30,
 			yAxisWidth = 10,
 			xAxisHeight = 20,
-			graphWidth = width- labelWidth - yAxisWidth - m[1] - m[3],
-			graphHeight = height - xAxisHeight - m[0] - m[2];
-
+			graphWidth = width- this.labelWidth - yAxisWidth - this.m[1] - this.m[3],
+			graphHeight = height - xAxisHeight - this.m[0] - this.m[2];
 		var self = this;
 
 		//
@@ -319,12 +341,12 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 
 			// draw axes
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]+graphHeight) + ")" )
+				.attr("transform", "translate(" + (this.labelWidth + this.m[3]) + "," + (this.m[0]+graphHeight) + ")" )
 				.attr("class", "x axis")
 				.call(this.xAxis);
 
 			this.svg.append("g")
-				.attr("transform", "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")" )
+				.attr("transform", "translate(" + (this.labelWidth + m[3]) + "," + (this.m[0]) + ")" )
 				.attr("class", "y axis")
 				.call(this.yAxis);				
 		} else 
@@ -332,6 +354,22 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 			this.svg.select(".x.axis").transition(200).call(this.xAxis);
 			this.svg.select(".y.axis").transition(200).call(this.yAxis);
 		}
+
+        // axes labels
+        var gAxisLabels = this.svg.append("g");
+
+        gAxisLabels.append("text")
+            .attr("class", "yAxisLabel")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(10," + (graphHeight/2)+ ")rotate(-90)")
+            .text("% Agreement");
+
+        gAxisLabels.append("text")
+            .attr("class", "xAxisLabel")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(" + ((graphWidth/2) +this.m[3] + this.labelWidth)+ "," + (height-10) + ")")
+            .text("Line Number");
+
 
 		var mapped_pairs = $.map(data.data,function(v,k) {
 				return {value: v.entries, pair: k}; 
@@ -353,7 +391,7 @@ IRA.Views.Users.Graph = Backbone.View.extend({
 				return d.pair;
 			})
 			.attr("transform", function(d) {
-				return "translate(" + (labelWidth + m[3]) + "," + (m[0]) + ")"
+				return "translate(" + (self.labelWidth + self.m[3]) + "," + (self.m[0]) + ")"
 			}).transition(500)
 			.attr("opacity", 1);
 
