@@ -44,7 +44,7 @@
 				var timerange = [Number.MAX_VALUE, Number.MIN_VALUE];
 				var range = [Number.MAX_VALUE, Number.MIN_VALUE];
 				var bins = {};
-				var histogram = {};
+				var histogram = {0: 0, 10:0, 20:0, 30:0, 40:0, 50:0, 60:0, 70:0, 80:0, 90:0, 100:0 };
 				var pair_data = {};
 				var point_details = {};
 				var all_points = [];
@@ -109,10 +109,11 @@
 							res.data[pair_name][linenum] = value;
 
 							// histogram
-							if( !(value in histogram)) {
-								histogram[value] = 0;
+							var histval = Utils.Math.trunc(value/100,1)*100;
+							if( !(histval in histogram)) {
+								histogram[histval] = 0;
 							}
-							histogram[value]++;
+							histogram[histval]++;
 
 							overall_sum += value;
 							overall_cnt++;
